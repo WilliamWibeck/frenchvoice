@@ -1,15 +1,57 @@
+import { categoryLabel } from "../../lib/feedback.js";
+
+function FeedbackCard({ item }) {
+  if (item.verdict === "unclear") {
+    return (
+      <div className="correction-item unclear">
+        <span className="fb-kicker">Might have misheard</span>
+        <p>{item.original}</p>
+        <p className="fb-explain">I did not treat this as a grammar mistake.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className={`correction-item ${item.isMajor ? "major" : item.isMinor ? "minor" : "tip-only"}`}>
+      {item.category ? (
+        <span className="fb-kicker">{categoryLabel(item.category)}</span>
+      ) : item.tip ? (
+        <span className="fb-kicker">Tip</span>
+      ) : null}
+      {item.corrected && (
+        <p>
+          <span className="orig">{item.original}</span>
+          {" → "}
+          <span className="fixed">{item.corrected}</span>
+        </p>
+      )}
+      {item.explain && <p className="fb-explain">{item.explain}</p>}
+      {item.tip && (
+        <p className="fb-tip">
+          <strong>{item.tip.fr}</strong>
+          {item.tip.en ? <span> — {item.tip.en}</span> : null}
+        </p>
+      )}
+    </div>
+  );
+}
+
 export default function CorrectionsPanel({ corrections }) {
+  const visible = corrections.filter(
+    (c) => c.isMajor || c.isMinor || c.verdict === "unclear" || c.tip
+  );
+
   return (
     <div className="panel corrections-panel">
-      <h2>Corrections &amp; feedback</h2>
+      <h2>Corrections &amp; tips</h2>
       <div className="corrections">
-        {corrections.length === 0 && (
-          <p className="empty-hint">Corrections will appear here as you speak. No news is good news.</p>
+        {visible.length === 0 && (
+          <p className="empty-hint">
+            Real mistakes show up here after you speak. Tips appear only now and then.
+          </p>
         )}
-        {corrections.map((c) => (
-          <div key={c.id} className="correction-item">
-            {c.text}
-          </div>
+        {visible.map((c) => (
+          <FeedbackCard key={c.id} item={c} />
         ))}
       </div>
     </div>

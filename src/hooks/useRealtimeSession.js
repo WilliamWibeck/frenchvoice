@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState } from "react";
 import { startPcmCapture, createPcmPlayer } from "../lib/pcmAudio.js";
+import { normalizeFeedback } from "../../lib/feedback.js";
 
 const STATUS_LABELS = {
   idle: "Idle",
@@ -32,6 +33,9 @@ export function useRealtimeSession() {
     utterances: 0,
     wordsSpoken: 0,
     corrections: 0,
+    lastTipAt: -99,
+    feedback: [],
+    turns: [],
   });
 
   const upsertTranscriptItem = useCallback((id, who, textOrUpdater) => {
@@ -58,14 +62,42 @@ export function useRealtimeSession() {
       });
       const data = await res.json();
       if (!sessionRef.current || sessionRef.current.closed) return;
-      const reply = (data.correction || "").trim();
-      if (!reply || reply.toUpperCase() === "OK") return;
-      statsRef.current.corrections += 1;
-      setLiveStats((prev) => ({ ...prev, corrections: statsRef.current.corrections }));
-      setCorrections((prev) => [
-        ...prev,
-        { id: `correction-${itemId}`, text: reply },
-      ]);
+
+      let feedback = data.feedback;
+      if (!feedback && data.correction) {
+        feedback = normalizeFeedback({ correction: data.correction }, text);
+      }
+      if (!feedback) return;
+      feedback = { ...feedback, id: `fb-${itemId}`, itemId };
+
+      const sinceTip = statsRef.current.utterances - statsRef.current.lastTipAt;
+      if (feedback.tip && (feedback.isMajor || sinceTip < 3)) {
+        feedback = { ...feedback, tip: null };
+      } else if (feedback.tip) {
+        statsRef.current.lastTipAt = statsRef.current.utterances;
+      }
+
+      statsRef.current.feedback.push(feedback);
+      statsRef.current.turns.push({
+        itemId,
+        verdict: feedback.verdict,
+        severity: feedback.severity,
+        category: feedback.category,
+      });
+
+      if (feedback.isMajor) {
+        statsRef.current.corrections += 1;
+        setLiveStats((prev) => ({ ...prev, corrections: statsRef.current.corrections }));
+      }
+
+      const showInPanel = feedback.isMajor || feedback.isMinor || feedback.verdict === "unclear" || feedback.tip;
+      if (showInPanel) {
+        setCorrections((prev) => [...prev, feedback]);
+      }
+
+      setTranscript((prev) =>
+        prev.map((m) => (m.id === itemId ? { ...m, feedback } : m))
+      );
     } catch (err) {
       console.error("Correction check failed:", err);
     }
@@ -85,6 +117,8 @@ export function useRealtimeSession() {
       utterances: s.utterances,
       wordsSpoken: s.wordsSpoken,
       corrections: s.corrections,
+      feedback: s.feedback || [],
+      turns: s.turns || [],
     };
   }, []);
 
@@ -127,6 +161,9 @@ export function useRealtimeSession() {
         utterances: 0,
         wordsSpoken: 0,
         corrections: 0,
+        lastTipAt: -99,
+        feedback: [],
+        turns: [],
       };
       setStatus("connecting");
 

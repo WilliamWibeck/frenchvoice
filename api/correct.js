@@ -1,6 +1,12 @@
 import { GoogleGenAI } from "@google/genai";
-import { CORRECTION_MODEL, CORRECTION_PROMPT } from "../lib/scenarios-data.js";
+import { CORRECTION_MODEL } from "../lib/scenarios-data.js";
 import { getGeminiApiKey } from "../lib/gemini.js";
+import {
+  CORRECTION_PROMPT,
+  FEEDBACK_SCHEMA,
+  normalizeFeedback,
+  parseModelJson,
+} from "../lib/feedback.js";
 
 function readBody(req) {
   if (req.body && typeof req.body === "object") return req.body;
@@ -40,10 +46,14 @@ export default async function handler(req, res) {
       config: {
         systemInstruction: CORRECTION_PROMPT,
         temperature: 0.2,
+        responseMimeType: "application/json",
+        responseJsonSchema: FEEDBACK_SCHEMA,
       },
     });
 
-    res.status(200).json({ correction: (result.text || "").trim() });
+    const parsed = parseModelJson(result.text || "");
+    const feedback = normalizeFeedback(parsed || {}, text);
+    res.status(200).json({ feedback });
   } catch (err) {
     console.error("Gemini correction check failed:", err);
     res.status(500).json({
