@@ -4,6 +4,7 @@ import StatsPanel from "./StatsPanel.jsx";
 export default function ScenarioPicker({ onSelect, disabled, error, stats, onResetStats }) {
   const [scenarios, setScenarios] = useState([]);
   const [loadError, setLoadError] = useState(null);
+  const [topic, setTopic] = useState("");
 
   useEffect(() => {
     fetch("/api/scenarios")
@@ -18,13 +19,24 @@ export default function ScenarioPicker({ onSelect, disabled, error, stats, onRes
         Each tap starts a slightly different scene — a new goal, a new name,
         sometimes a small snag. Corrections stay on the side so you can keep talking.
       </p>
+      <label className="topic-field">
+        <span>I want to talk about…</span>
+        <input
+          type="text"
+          maxLength={200}
+          placeholder="Optional — weekend plans, my job, a trip…"
+          value={topic}
+          disabled={disabled}
+          onChange={(e) => setTopic(e.target.value)}
+        />
+      </label>
       <div className="scenario-grid">
         {scenarios.map((s) => (
           <button
             key={s.id}
             className={`scenario-card${s.id === "surprise" ? " surprise" : ""}`}
             disabled={disabled}
-            onClick={() => onSelect(s.id, s.title)}
+            onClick={() => onSelect(s.id, s.title, { topic: topic.trim() })}
           >
             <span className="scenario-title">{s.title}</span>
             {s.blurb && <span className="scenario-blurb">{s.blurb}</span>}

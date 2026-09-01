@@ -111,6 +111,7 @@ export function useRealtimeSession() {
       scenarioId: s.scenarioId,
       scenarioTitle: s.scenarioTitle,
       mission: s.mission,
+      topic: s.topic || "",
       startedAt: s.startedAt || endedAt,
       endedAt,
       durationMs: s.startedAt ? endedAt - s.startedAt : 0,
@@ -144,7 +145,7 @@ export function useRealtimeSession() {
   }, [snapshotRecap]);
 
   const startCall = useCallback(
-    async (scenarioId, title) => {
+    async (scenarioId, title, options = {}) => {
       setError(null);
       setTranscript([]);
       setCorrections([]);
@@ -157,6 +158,7 @@ export function useRealtimeSession() {
         scenarioId,
         scenarioTitle: title,
         mission: "",
+        topic: options.topic || "",
         startedAt: 0,
         utterances: 0,
         wordsSpoken: 0,
@@ -198,7 +200,14 @@ export function useRealtimeSession() {
       sessionRef.current = session;
 
       try {
-        const tokenRes = await fetch(`/api/session?scenario=${encodeURIComponent(scenarioId)}`);
+        const tokenRes = await fetch("/api/session", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            scenario: scenarioId,
+            topic: options.topic || "",
+          }),
+        });
         const tokenData = await tokenRes.json();
         if (!tokenRes.ok) throw new Error(tokenData.error || "Failed to get session token");
         const ephemeralKey = tokenData.value;
@@ -218,7 +227,7 @@ export function useRealtimeSession() {
         statsRef.current.scenarioId = resolvedId;
         statsRef.current.scenarioTitle = resolvedTitle;
         statsRef.current.mission = resolvedMission;
-        statsRef.current.startedAt = started;
+        statsRef.current.topic = options.topic || "";
 
         const player = createPcmPlayer();
         session.player = player;

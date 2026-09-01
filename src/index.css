@@ -42,6 +42,36 @@ main {
   line-height: 1.5;
 }
 
+.topic-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 560px;
+  margin: 0 auto 20px;
+  text-align: left;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+.topic-field input {
+  font-family: inherit;
+  font-size: 1rem;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--text);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+.topic-field input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
 .scenario-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));

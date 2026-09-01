@@ -13,10 +13,10 @@ export default function App() {
   const [recapRecorded, setRecapRecorded] = useState(false);
   const session = useRealtimeSession();
 
-  async function handleSelect(scenarioId, title) {
+  async function handleSelect(scenarioId, title, options = {}) {
     setRecap(null);
     setConnecting(true);
-    const ok = await session.startCall(scenarioId, title);
+    const ok = await session.startCall(scenarioId, title, options);
     setConnecting(false);
     if (ok) setInCall(true);
   }

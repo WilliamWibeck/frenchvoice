@@ -6,6 +6,23 @@ import {
 } from "../lib/scenarios-data.js";
 import { getGeminiApiKey } from "../lib/gemini.js";
 
+function readSessionInput(req) {
+  const query = req.query || {};
+  let body = req.body;
+  if (typeof body === "string") {
+    try {
+      body = JSON.parse(body);
+    } catch {
+      body = {};
+    }
+  }
+  if (!body || typeof body !== "object") body = {};
+  return {
+    scenario: body.scenario || query.scenario,
+    topic: body.topic || query.topic || "",
+  };
+}
+
 // Mints a short-lived Gemini Live API token scoped to the chosen scenario.
 // This is the only place the real GEMINI_API_KEY is ever used for realtime
 // audio — it never reaches the browser. Set GEMINI_API_KEY as an environment
@@ -19,8 +36,8 @@ export default async function handler(req, res) {
     });
   }
 
-  const requested = req.query && req.query.scenario;
-  const scenario = resolveScenario(requested);
+  const input = readSessionInput(req);
+  const scenario = resolveScenario(input.scenario, { topic: input.topic });
 
   try {
     const client = new GoogleGenAI({

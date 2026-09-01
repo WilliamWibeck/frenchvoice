@@ -21,6 +21,7 @@ const PORT = process.env.API_PORT || 3001;
 app.use(express.json({ limit: "32kb" }));
 app.get("/api/scenarios", scenariosHandler);
 app.get("/api/session", sessionHandler);
+app.post("/api/session", sessionHandler);
 app.post("/api/correct", correctHandler);
 
 app.listen(PORT, () => {
