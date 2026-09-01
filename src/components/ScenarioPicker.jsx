@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { FOCUS_OPTIONS } from "../../lib/feedback.js";
 import { pickDailyPlan } from "../lib/daily.js";
+import { pickWeakFocus } from "../lib/weakpoints.js";
 import StatsPanel from "./StatsPanel.jsx";
 
 export default function ScenarioPicker({ onSelect, disabled, error, stats, onResetStats }) {
@@ -15,6 +16,8 @@ export default function ScenarioPicker({ onSelect, disabled, error, stats, onRes
       .then(setScenarios)
       .catch(() => setLoadError("Couldn't load scenarios. Refresh the page to try again."));
   }, []);
+
+  const weak = pickWeakFocus(stats);
 
   return (
     <section id="picker-screen">
@@ -42,13 +45,21 @@ export default function ScenarioPicker({ onSelect, disabled, error, stats, onRes
           const match = scenarios.find((s) => s.id === plan.scenarioId);
           onSelect(plan.scenarioId, match ? match.title : "Daily session", {
             topic: topic.trim(),
-            focus: focus || plan.focus,
+            focus: focus || pickWeakFocus(stats)?.id || plan.focus,
             daily: true,
           });
         }}
       >
         Today's 15 minutes
       </button>
+      {weak && (
+        <p className="weak-banner">
+          Suggested focus: {weak.label} ({weak.accuracy}% on {weak.attempts} tries).
+          <button type="button" className="text-btn inline" onClick={() => setFocus(weak.id)}>
+            Use this
+          </button>
+        </p>
+      )}
       <div className="focus-row" role="group" aria-label="Grammar focus">
         {FOCUS_OPTIONS.map((f) => (
           <button

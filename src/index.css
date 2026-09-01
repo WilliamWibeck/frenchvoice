@@ -394,6 +394,26 @@ main {
   font-size: 0.88rem;
   margin: 0 0 14px;
 }
+.weak-banner {
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.88rem;
+  margin: 0 auto 12px;
+  max-width: 560px;
+  line-height: 1.4;
+}
+.text-btn.inline {
+  display: inline;
+  margin-left: 8px;
+}
+  background: rgba(79, 127, 255, 0.12);
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  margin: 0 0 14px;
+}
 
 .error-banner {
   background: rgba(229,72,77,0.12);
