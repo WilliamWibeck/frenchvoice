@@ -72,6 +72,37 @@ main {
   border-color: var(--accent);
 }
 
+.focus-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  margin: 0 auto 20px;
+}
+.focus-chip {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 999px;
+  padding: 6px 12px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.focus-chip:hover { border-color: var(--accent); }
+.focus-chip.selected {
+  border-color: var(--accent);
+  background: rgba(79, 127, 255, 0.16);
+  color: var(--accent);
+}
+.focus-chip:disabled { opacity: 0.5; cursor: not-allowed; }
+.focus-note {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
 .scenario-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));

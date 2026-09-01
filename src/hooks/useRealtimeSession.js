@@ -18,6 +18,7 @@ export function useRealtimeSession() {
   const [scenarioTitle, setScenarioTitle] = useState("");
   const [scenarioId, setScenarioId] = useState("");
   const [mission, setMission] = useState("");
+  const [focus, setFocus] = useState("");
   const [startedAt, setStartedAt] = useState(null);
   const [transcript, setTranscript] = useState([]);
   const [corrections, setCorrections] = useState([]);
@@ -112,6 +113,7 @@ export function useRealtimeSession() {
       scenarioTitle: s.scenarioTitle,
       mission: s.mission,
       topic: s.topic || "",
+      focus: s.focus || "",
       startedAt: s.startedAt || endedAt,
       endedAt,
       durationMs: s.startedAt ? endedAt - s.startedAt : 0,
@@ -152,6 +154,7 @@ export function useRealtimeSession() {
       setScenarioTitle(title);
       setScenarioId(scenarioId);
       setMission("");
+      setFocus(options.focus || "");
       setStartedAt(null);
       setLiveStats({ utterances: 0, wordsSpoken: 0, corrections: 0 });
       statsRef.current = {
@@ -159,6 +162,7 @@ export function useRealtimeSession() {
         scenarioTitle: title,
         mission: "",
         topic: options.topic || "",
+        focus: options.focus || "",
         startedAt: 0,
         utterances: 0,
         wordsSpoken: 0,
@@ -206,6 +210,7 @@ export function useRealtimeSession() {
           body: JSON.stringify({
             scenario: scenarioId,
             topic: options.topic || "",
+            focus: options.focus || "",
           }),
         });
         const tokenData = await tokenRes.json();
@@ -228,6 +233,8 @@ export function useRealtimeSession() {
         statsRef.current.scenarioTitle = resolvedTitle;
         statsRef.current.mission = resolvedMission;
         statsRef.current.topic = options.topic || "";
+        statsRef.current.focus = options.focus || "";
+        statsRef.current.startedAt = started;
 
         const player = createPcmPlayer();
         session.player = player;
@@ -318,6 +325,7 @@ export function useRealtimeSession() {
     scenarioTitle,
     scenarioId,
     mission,
+    focus,
     startedAt,
     liveStats,
     transcript,

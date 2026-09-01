@@ -51,6 +51,7 @@ export default function App() {
           <CallScreen
             scenarioTitle={session.scenarioTitle}
             mission={session.mission}
+            focus={session.focus}
             status={session.status}
             statusLabel={session.statusLabel}
             startedAt={session.startedAt}

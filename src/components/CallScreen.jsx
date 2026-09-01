@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { accuracyPct, formatClock } from "../lib/stats.js";
+import { categoryLabel } from "../../lib/feedback.js";
 import TranscriptPanel from "./TranscriptPanel.jsx";
 import CorrectionsPanel from "./CorrectionsPanel.jsx";
 
@@ -16,6 +17,7 @@ function useElapsed(startedAt) {
 export default function CallScreen({
   scenarioTitle,
   mission,
+  focus,
   status,
   statusLabel,
   startedAt,
@@ -39,10 +41,11 @@ export default function CallScreen({
         </button>
       </div>
 
-      {mission && (
+      {(mission || focus) && (
         <div className="mission-banner">
           <span className="mission-label">Your goal</span>
           <span>{mission}</span>
+          {focus ? <span className="focus-note">Focus: {categoryLabel(focus)}</span> : null}
         </div>
       )}
 

@@ -20,6 +20,7 @@ function readSessionInput(req) {
   return {
     scenario: body.scenario || query.scenario,
     topic: body.topic || query.topic || "",
+    focus: body.focus || query.focus || "",
   };
 }
 
@@ -37,7 +38,10 @@ export default async function handler(req, res) {
   }
 
   const input = readSessionInput(req);
-  const scenario = resolveScenario(input.scenario, { topic: input.topic });
+  const scenario = resolveScenario(input.scenario, {
+    topic: input.topic,
+    focus: input.focus,
+  });
 
   try {
     const client = new GoogleGenAI({
