@@ -311,6 +311,24 @@ main {
   gap: 10px;
   margin-bottom: 14px;
 }
+.sparkline {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 36px;
+  margin: 0 0 18px;
+}
+.spark {
+  flex: 1;
+  min-width: 6px;
+  max-width: 18px;
+  border-radius: 3px 3px 1px 1px;
+  height: 40%;
+}
+.spark-ok { background: var(--accent-2); height: 70%; }
+.spark-minor { background: var(--warn); height: 50%; }
+.spark-major { background: var(--danger); height: 100%; }
+.spark-unclear { background: var(--muted); height: 30%; }
 .recap-words {
   color: var(--muted);
   font-size: 0.9rem;

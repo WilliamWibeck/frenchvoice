@@ -1,5 +1,6 @@
 import { accuracyPct, formatClock, formatMinutes } from "../lib/stats.js";
 import { categoryLabel, pickTakeaways } from "../../lib/feedback.js";
+import SessionSparkline from "./SessionSparkline.jsx";
 
 export default function SessionRecap({ recap, recorded, onDone }) {
   const acc = accuracyPct(recap.utterances, recap.corrections);
@@ -32,6 +33,8 @@ export default function SessionRecap({ recap, recorded, onDone }) {
           <span className="kpi-label">accuracy</span>
         </div>
       </div>
+
+      <SessionSparkline turns={recap.turns} />
 
       {(takeaways.correction || takeaways.tip || takeaways.keep) && (
         <div className="takeaways">
