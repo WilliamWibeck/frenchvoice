@@ -61,6 +61,7 @@ export default function App() {
             corrections={session.corrections}
             onEnd={handleEnd}
             onTimeUp={session.promptWrapUp}
+            onRepeat={session.promptRepeat}
           />
         ) : recap ? (
           <SessionRecap

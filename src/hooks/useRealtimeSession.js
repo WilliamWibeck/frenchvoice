@@ -349,6 +349,27 @@ export function useRealtimeSession() {
     });
   }, []);
 
+  const promptRepeat = useCallback((phrase) => {
+    const session = sessionRef.current;
+    const text = typeof phrase === "string" ? phrase.trim() : "";
+    if (!session || session.closed || !session.sendJson || !text) return;
+    session.sendJson({
+      clientContent: {
+        turns: [
+          {
+            role: "user",
+            parts: [
+              {
+                text: `The learner will now repeat this phrase: "${text}". Listen, give a brief encouraging acknowledgment in French, then continue the scenario. Do not switch to English.`,
+              },
+            ],
+          },
+        ],
+        turnComplete: true,
+      },
+    });
+  }, []);
+
   return {
     status,
     statusLabel: STATUS_LABELS[status] || status,
@@ -365,6 +386,7 @@ export function useRealtimeSession() {
     startCall,
     endCall,
     promptWrapUp,
+    promptRepeat,
   };
 }
 

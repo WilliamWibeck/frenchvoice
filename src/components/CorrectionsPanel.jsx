@@ -1,6 +1,6 @@
 import { categoryLabel } from "../../lib/feedback.js";
 
-function FeedbackCard({ item }) {
+function FeedbackCard({ item, onRepeat }) {
   if (item.verdict === "unclear") {
     return (
       <div className="correction-item unclear">
@@ -32,11 +32,16 @@ function FeedbackCard({ item }) {
           {item.tip.en ? <span> — {item.tip.en}</span> : null}
         </p>
       )}
+      {item.corrected && onRepeat && (
+        <button type="button" className="repeat-btn" onClick={() => onRepeat(item.corrected)}>
+          Say it again
+        </button>
+      )}
     </div>
   );
 }
 
-export default function CorrectionsPanel({ corrections }) {
+export default function CorrectionsPanel({ corrections, onRepeat }) {
   const visible = corrections.filter(
     (c) => c.isMajor || c.isMinor || c.verdict === "unclear" || c.tip
   );
@@ -51,7 +56,7 @@ export default function CorrectionsPanel({ corrections }) {
           </p>
         )}
         {visible.map((c) => (
-          <FeedbackCard key={c.id} item={c} />
+          <FeedbackCard key={c.id} item={c} onRepeat={onRepeat} />
         ))}
       </div>
     </div>

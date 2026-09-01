@@ -527,7 +527,18 @@ main {
 .correction-item .fixed { color: var(--accent-2); font-weight: 600; }
 .orig { color: #ff9a9d; text-decoration: line-through; }
 .fixed { color: var(--accent-2); font-weight: 600; }
-.empty-hint { color: var(--muted); font-size: 0.9rem; }
+.repeat-btn {
+  margin-top: 8px;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 6px;
+  padding: 4px 10px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+.repeat-btn:hover { border-color: var(--accent); color: var(--accent); }
 
 .bubble.you .err-span {
   background: rgba(255, 255, 255, 0.22);

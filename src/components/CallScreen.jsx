@@ -28,6 +28,7 @@ export default function CallScreen({
   corrections,
   onEnd,
   onTimeUp,
+  onRepeat,
 }) {
   const elapsed = useElapsed(startedAt);
   const acc = accuracyPct(liveStats.utterances, liveStats.corrections);
@@ -70,7 +71,7 @@ export default function CallScreen({
 
       <div className="call-body">
         <TranscriptPanel transcript={transcript} />
-        <CorrectionsPanel corrections={corrections} />
+        <CorrectionsPanel corrections={corrections} onRepeat={onRepeat} />
       </div>
     </section>
   );
