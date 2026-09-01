@@ -406,14 +406,6 @@ main {
   display: inline;
   margin-left: 8px;
 }
-  background: rgba(79, 127, 255, 0.12);
-  border: 1px solid var(--accent);
-  color: var(--accent);
-  padding: 8px 12px;
-  border-radius: 8px;
-  font-size: 0.88rem;
-  margin: 0 0 14px;
-}
 
 .error-banner {
   background: rgba(229,72,77,0.12);
@@ -539,6 +531,7 @@ main {
   font-weight: 600;
 }
 .repeat-btn:hover { border-color: var(--accent); color: var(--accent); }
+.empty-hint { color: var(--muted); font-size: 0.9rem; }
 
 .bubble.you .err-span {
   background: rgba(255, 255, 255, 0.22);
