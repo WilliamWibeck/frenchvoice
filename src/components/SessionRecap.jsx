@@ -2,7 +2,7 @@ import { accuracyPct, formatClock, formatMinutes } from "../lib/stats.js";
 import { categoryLabel, pickTakeaways } from "../../lib/feedback.js";
 import SessionSparkline from "./SessionSparkline.jsx";
 
-export default function SessionRecap({ recap, recorded, onDone }) {
+export default function SessionRecap({ recap, recorded, onDone, onPracticeVocab }) {
   const acc = accuracyPct(recap.utterances, recap.corrections);
   const takeaways = pickTakeaways(recap.feedback);
   const saved = (recap.feedback || []).filter(
@@ -97,6 +97,25 @@ export default function SessionRecap({ recap, recorded, onDone }) {
               )}
             </div>
           ))}
+        </div>
+      )}
+
+      {(recap.vocab || []).length > 0 && (
+        <div className="vocab-review">
+          <h3>Words to keep</h3>
+          <ul>
+            {(recap.vocab || []).map((v) => (
+              <li key={v.fr}>
+                <strong>{v.fr}</strong>
+                {v.en ? <span> — {v.en}</span> : null}
+              </li>
+            ))}
+          </ul>
+          {onPracticeVocab && (
+            <button className="primary-btn" type="button" onClick={() => onPracticeVocab(recap.vocab)}>
+              Speak these words
+            </button>
+          )}
         </div>
       )}
 

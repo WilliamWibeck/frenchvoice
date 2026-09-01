@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState } from "react";
 import { startPcmCapture, createPcmPlayer } from "../lib/pcmAudio.js";
-import { normalizeFeedback } from "../../lib/feedback.js";
+import { normalizeFeedback, collectVocab } from "../../lib/feedback.js";
 
 const STATUS_LABELS = {
   idle: "Idle",
@@ -124,6 +124,7 @@ export function useRealtimeSession() {
       corrections: s.corrections,
       feedback: s.feedback || [],
       turns: s.turns || [],
+      vocab: collectVocab(s.feedback || []),
     };
   }, []);
 
@@ -216,6 +217,7 @@ export function useRealtimeSession() {
             topic: options.topic || "",
             focus: options.focus || "",
             daily: !!options.daily,
+            vocabTargets: options.vocabTargets || [],
           }),
         });
         const tokenData = await tokenRes.json();

@@ -1,4 +1,4 @@
-import { CATEGORY_IDS, categoryLabel } from "../../lib/feedback.js";
+import { CATEGORY_IDS, categoryLabel, collectVocab } from "../../lib/feedback.js";
 
 const STORAGE_KEY = "frenchvoice-stats-v1";
 const MAX_SESSIONS = 80;
@@ -153,6 +153,24 @@ export function summarizeStats(stats) {
 export function shouldRecord(recap) {
   if (!recap) return false;
   return (recap.utterances || 0) > 0 || (recap.durationMs || 0) >= 10000;
+}
+
+export function recentVocab(stats, limit = 8) {
+  const seen = new Set();
+  const out = [];
+  for (const session of stats?.sessions || []) {
+    const words = session.vocab?.length ? session.vocab : collectVocab(session.feedback);
+    for (const v of words) {
+      const fr = (v.fr || "").trim();
+      if (!fr) continue;
+      const key = fr.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push({ fr, en: (v.en || "").trim() });
+      if (out.length >= limit) return out;
+    }
+  }
+  return out;
 }
 
 export function categoryProgress(stats) {

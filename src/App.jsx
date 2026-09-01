@@ -63,7 +63,15 @@ export default function App() {
             onTimeUp={session.promptWrapUp}
           />
         ) : recap ? (
-          <SessionRecap recap={recap} recorded={recapRecorded} onDone={() => setRecap(null)} />
+          <SessionRecap
+            recap={recap}
+            recorded={recapRecorded}
+            onDone={() => setRecap(null)}
+            onPracticeVocab={(words) => {
+              setRecap(null);
+              handleSelect("free", "Discussion libre", { vocabTargets: words });
+            }}
+          />
         ) : (
           <ScenarioPicker
             onSelect={handleSelect}

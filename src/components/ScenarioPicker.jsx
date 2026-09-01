@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { FOCUS_OPTIONS } from "../../lib/feedback.js";
 import { pickDailyPlan } from "../lib/daily.js";
 import { pickWeakFocus } from "../lib/weakpoints.js";
+import { recentVocab } from "../lib/stats.js";
 import StatsPanel from "./StatsPanel.jsx";
 
 export default function ScenarioPicker({ onSelect, disabled, error, stats, onResetStats }) {
@@ -18,6 +19,7 @@ export default function ScenarioPicker({ onSelect, disabled, error, stats, onRes
   }, []);
 
   const weak = pickWeakFocus(stats);
+  const words = recentVocab(stats);
 
   return (
     <section id="picker-screen">
@@ -52,6 +54,16 @@ export default function ScenarioPicker({ onSelect, disabled, error, stats, onRes
       >
         Today's 15 minutes
       </button>
+      {words.length >= 3 && (
+        <button
+          type="button"
+          className="text-btn"
+          disabled={disabled}
+          onClick={() => onSelect("free", "Discussion libre", { vocabTargets: words })}
+        >
+          Review my words
+        </button>
+      )}
       {weak && (
         <p className="weak-banner">
           Suggested focus: {weak.label} ({weak.accuracy}% on {weak.attempts} tries).
