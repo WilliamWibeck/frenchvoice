@@ -51,6 +51,26 @@ export default function StatsPanel({ stats, onReset }) {
         })}
       </div>
 
+      {summary.categories.length > 0 && (
+        <div className="category-progress">
+          <h2>By grammar area</h2>
+          {summary.categories.map((row) => (
+            <div key={row.id} className="category-row">
+              <span className="category-name">{row.label}</span>
+              <div className="category-bar-track" aria-hidden="true">
+                <div
+                  className="category-bar-fill"
+                  style={{ width: `${row.accuracy == null ? 0 : row.accuracy}%` }}
+                />
+              </div>
+              <span className="category-meta">
+                {row.accuracy == null ? "—" : `${row.accuracy}%`}
+                <span> · {row.attempts}</span>
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
       {summary.byScenario.length > 0 && (
         <div className="scenario-stats">
           {summary.byScenario.map((row) => (

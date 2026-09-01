@@ -1,3 +1,5 @@
+import { CATEGORY_IDS, categoryLabel } from "../../lib/feedback.js";
+
 const STORAGE_KEY = "frenchvoice-stats-v1";
 const MAX_SESSIONS = 80;
 
@@ -143,6 +145,7 @@ export function summarizeStats(stats) {
       sessions: byDay[key].sessions,
     })),
     byScenario: Object.values(byScenario).sort((a, b) => b.sessions - a.sessions),
+    categories: categoryProgress({ sessions: counted }),
     recent: counted.slice(0, 8),
   };
 }
@@ -150,4 +153,30 @@ export function summarizeStats(stats) {
 export function shouldRecord(recap) {
   if (!recap) return false;
   return (recap.utterances || 0) > 0 || (recap.durationMs || 0) >= 10000;
+}
+
+export function categoryProgress(stats) {
+  const totals = {};
+  for (const id of CATEGORY_IDS) {
+    totals[id] = { id, attempts: 0, errors: 0 };
+  }
+  for (const session of stats?.sessions || []) {
+    for (const fb of session.feedback || []) {
+      const used = new Set(fb.structuresUsed || []);
+      if (fb.category) used.add(fb.category);
+      for (const id of used) {
+        if (!totals[id]) continue;
+        totals[id].attempts += 1;
+        if (fb.isMajor && fb.category === id) totals[id].errors += 1;
+      }
+    }
+  }
+  return Object.values(totals)
+    .filter((row) => row.attempts > 0)
+    .map((row) => ({
+      ...row,
+      accuracy: accuracyPct(row.attempts, row.errors),
+      label: categoryLabel(row.id),
+    }))
+    .sort((a, b) => b.attempts - a.attempts);
 }

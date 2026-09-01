@@ -245,6 +245,42 @@ main {
 }
 .scenario-stat-row span:first-child { color: var(--text); }
 
+.category-progress {
+  margin-bottom: 16px;
+}
+.category-progress h2 {
+  margin: 0 0 10px;
+  font-size: 0.95rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+.category-row {
+  display: grid;
+  grid-template-columns: 7.5rem 1fr auto;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 8px;
+  font-size: 0.82rem;
+}
+.category-name { color: var(--text); }
+.category-bar-track {
+  height: 8px;
+  background: var(--border);
+  border-radius: 99px;
+  overflow: hidden;
+}
+.category-bar-fill {
+  height: 100%;
+  background: var(--accent-2);
+  border-radius: 99px;
+}
+.category-meta {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
 .recent-list h2 {
   margin: 0 0 10px;
   font-size: 0.95rem;
