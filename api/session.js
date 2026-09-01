@@ -21,6 +21,7 @@ function readSessionInput(req) {
     scenario: body.scenario || query.scenario,
     topic: body.topic || query.topic || "",
     focus: body.focus || query.focus || "",
+    daily: !!(body.daily || query.daily),
   };
 }
 
@@ -41,6 +42,7 @@ export default async function handler(req, res) {
   const scenario = resolveScenario(input.scenario, {
     topic: input.topic,
     focus: input.focus,
+    daily: input.daily,
   });
 
   try {

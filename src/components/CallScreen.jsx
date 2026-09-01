@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { DAILY_MS } from "../lib/daily.js";
 import { accuracyPct, formatClock } from "../lib/stats.js";
 import { categoryLabel } from "../../lib/feedback.js";
 import TranscriptPanel from "./TranscriptPanel.jsx";
@@ -18,6 +19,7 @@ export default function CallScreen({
   scenarioTitle,
   mission,
   focus,
+  daily,
   status,
   statusLabel,
   startedAt,
@@ -25,9 +27,15 @@ export default function CallScreen({
   transcript,
   corrections,
   onEnd,
+  onTimeUp,
 }) {
   const elapsed = useElapsed(startedAt);
   const acc = accuracyPct(liveStats.utterances, liveStats.corrections);
+  const overTime = daily && elapsed >= DAILY_MS;
+
+  useEffect(() => {
+    if (overTime && onTimeUp) onTimeUp();
+  }, [overTime, onTimeUp]);
 
   return (
     <section id="call-screen">
@@ -50,11 +58,15 @@ export default function CallScreen({
       )}
 
       <div className="call-meta">
-        <span>{formatClock(elapsed)}</span>
+        <span>{daily ? `${formatClock(elapsed)} / 15:00` : formatClock(elapsed)}</span>
         <span>{liveStats.utterances} {liveStats.utterances === 1 ? "turn" : "turns"}</span>
         <span>{liveStats.corrections} {liveStats.corrections === 1 ? "correction" : "corrections"}</span>
         {acc != null && <span>{acc}% this session</span>}
       </div>
+
+      {overTime && (
+        <p className="wrap-banner">15 minutes in — wrap up whenever you like.</p>
+      )}
 
       <div className="call-body">
         <TranscriptPanel transcript={transcript} />

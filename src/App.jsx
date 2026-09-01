@@ -52,6 +52,7 @@ export default function App() {
             scenarioTitle={session.scenarioTitle}
             mission={session.mission}
             focus={session.focus}
+            daily={session.daily}
             status={session.status}
             statusLabel={session.statusLabel}
             startedAt={session.startedAt}
@@ -59,6 +60,7 @@ export default function App() {
             transcript={session.transcript}
             corrections={session.corrections}
             onEnd={handleEnd}
+            onTimeUp={session.promptWrapUp}
           />
         ) : recap ? (
           <SessionRecap recap={recap} recorded={recapRecorded} onDone={() => setRecap(null)} />

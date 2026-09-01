@@ -11,7 +11,9 @@ export default function SessionRecap({ recap, recorded, onDone }) {
 
   return (
     <section className="recap-screen">
-      <p className="recap-kicker">{recorded ? "Session saved" : "Short session"}</p>
+      <p className="recap-kicker">
+        {recap.daily ? "Daily session" : recorded ? "Session saved" : "Short session"}
+      </p>
       <h2>{recap.scenarioTitle}</h2>
       {recap.mission && <p className="recap-mission">{recap.mission}</p>}
 

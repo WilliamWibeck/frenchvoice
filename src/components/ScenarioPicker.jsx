@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { FOCUS_OPTIONS } from "../../lib/feedback.js";
+import { pickDailyPlan } from "../lib/daily.js";
 import StatsPanel from "./StatsPanel.jsx";
 
 export default function ScenarioPicker({ onSelect, disabled, error, stats, onResetStats }) {
@@ -32,6 +33,22 @@ export default function ScenarioPicker({ onSelect, disabled, error, stats, onRes
           onChange={(e) => setTopic(e.target.value)}
         />
       </label>
+      <button
+        type="button"
+        className="primary-btn daily-btn"
+        disabled={disabled || scenarios.length === 0}
+        onClick={() => {
+          const plan = pickDailyPlan();
+          const match = scenarios.find((s) => s.id === plan.scenarioId);
+          onSelect(plan.scenarioId, match ? match.title : "Daily session", {
+            topic: topic.trim(),
+            focus: focus || plan.focus,
+            daily: true,
+          });
+        }}
+      >
+        Today's 15 minutes
+      </button>
       <div className="focus-row" role="group" aria-label="Grammar focus">
         {FOCUS_OPTIONS.map((f) => (
           <button

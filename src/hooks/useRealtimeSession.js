@@ -19,6 +19,7 @@ export function useRealtimeSession() {
   const [scenarioId, setScenarioId] = useState("");
   const [mission, setMission] = useState("");
   const [focus, setFocus] = useState("");
+  const [daily, setDaily] = useState(false);
   const [startedAt, setStartedAt] = useState(null);
   const [transcript, setTranscript] = useState([]);
   const [corrections, setCorrections] = useState([]);
@@ -114,6 +115,7 @@ export function useRealtimeSession() {
       mission: s.mission,
       topic: s.topic || "",
       focus: s.focus || "",
+      daily: !!s.daily,
       startedAt: s.startedAt || endedAt,
       endedAt,
       durationMs: s.startedAt ? endedAt - s.startedAt : 0,
@@ -155,6 +157,7 @@ export function useRealtimeSession() {
       setScenarioId(scenarioId);
       setMission("");
       setFocus(options.focus || "");
+      setDaily(!!options.daily);
       setStartedAt(null);
       setLiveStats({ utterances: 0, wordsSpoken: 0, corrections: 0 });
       statsRef.current = {
@@ -163,6 +166,7 @@ export function useRealtimeSession() {
         mission: "",
         topic: options.topic || "",
         focus: options.focus || "",
+        daily: !!options.daily,
         startedAt: 0,
         utterances: 0,
         wordsSpoken: 0,
@@ -211,6 +215,7 @@ export function useRealtimeSession() {
             scenario: scenarioId,
             topic: options.topic || "",
             focus: options.focus || "",
+            daily: !!options.daily,
           }),
         });
         const tokenData = await tokenRes.json();
@@ -234,6 +239,7 @@ export function useRealtimeSession() {
         statsRef.current.mission = resolvedMission;
         statsRef.current.topic = options.topic || "";
         statsRef.current.focus = options.focus || "";
+        statsRef.current.daily = !!options.daily;
         statsRef.current.startedAt = started;
 
         const player = createPcmPlayer();
@@ -247,6 +253,7 @@ export function useRealtimeSession() {
         const sendJson = (payload) => {
           if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(payload));
         };
+        session.sendJson = sendJson;
 
         ws.addEventListener("open", () => {
           sendJson({
@@ -319,6 +326,27 @@ export function useRealtimeSession() {
     [upsertTranscriptItem, requestCorrectionCheck, endCall]
   );
 
+  const promptWrapUp = useCallback(() => {
+    const session = sessionRef.current;
+    if (!session || session.closed || session.wrapSent || !session.sendJson) return;
+    session.wrapSent = true;
+    session.sendJson({
+      clientContent: {
+        turns: [
+          {
+            role: "user",
+            parts: [
+              {
+                text: "The practice window is ending. Start wrapping up the conversation warmly in French. Do not mention a timer or English.",
+              },
+            ],
+          },
+        ],
+        turnComplete: true,
+      },
+    });
+  }, []);
+
   return {
     status,
     statusLabel: STATUS_LABELS[status] || status,
@@ -326,6 +354,7 @@ export function useRealtimeSession() {
     scenarioId,
     mission,
     focus,
+    daily,
     startedAt,
     liveStats,
     transcript,
@@ -333,6 +362,7 @@ export function useRealtimeSession() {
     error,
     startCall,
     endCall,
+    promptWrapUp,
   };
 }
 
