@@ -1,134 +1,122 @@
-import { accuracyPct, formatClock, formatMinutes } from "../lib/stats.js";
+import { formatClock } from "../lib/stats.js";
 import { categoryLabel, pickTakeaways } from "../../lib/feedback.js";
-import SessionSparkline from "./SessionSparkline.jsx";
+import { recapHeadline } from "../lib/copy.js";
+import Margot from "./Margot.jsx";
+import { useTheme } from "./ThemeToggle.jsx";
 
-export default function SessionRecap({ recap, recorded, onDone, onPracticeVocab }) {
-  const acc = accuracyPct(recap.utterances, recap.corrections);
+export default function SessionRecap({ recap, recorded, onDone, onAgain, onPracticeVocab }) {
   const takeaways = pickTakeaways(recap.feedback);
-  const saved = (recap.feedback || []).filter(
-    (i) => i.isMajor || i.isMinor || i.verdict === "unclear" || i.tip
-  );
+  const keep = takeaways.correction || takeaways.tip;
+  const { theme } = useTheme();
+  const evening = theme === "soir";
+  const frozen = (recap.transcript || []).filter((m) => m.text);
+  const kicker = evening
+    ? `Séance terminée · ${formatClock(recap.durationMs)}`
+    : recap.daily
+      ? `Séance du jour · ${formatClock(recap.durationMs)}`
+      : `Séance terminée · ${formatClock(recap.durationMs)}`;
 
   return (
-    <section className="recap-screen">
-      <p className="recap-kicker">
-        {recap.daily ? "Daily session" : recorded ? "Session saved" : "Short session"}
-      </p>
-      <h2>{recap.scenarioTitle}</h2>
-      {recap.mission && <p className="recap-mission">{recap.mission}</p>}
-
-      <div className="recap-grid">
-        <div className="recap-stat">
-          <span className="kpi-value">{formatClock(recap.durationMs)}</span>
-          <span className="kpi-label">time</span>
-        </div>
-        <div className="recap-stat">
-          <span className="kpi-value">{recap.utterances}</span>
-          <span className="kpi-label">{recap.utterances === 1 ? "turn" : "turns"}</span>
-        </div>
-        <div className="recap-stat">
-          <span className="kpi-value">{recap.corrections}</span>
-          <span className="kpi-label">{recap.corrections === 1 ? "major miss" : "major misses"}</span>
-        </div>
-        <div className="recap-stat">
-          <span className="kpi-value">{acc == null ? "—" : `${acc}%`}</span>
-          <span className="kpi-label">accuracy</span>
-        </div>
+    <section className="recap-overlay">
+      <div className="recap-frozen" aria-hidden="true">
+        <div className="recap-frozen-title">{recap.scenarioTitle || "Pratique"}</div>
+        {frozen.slice(-4).map((m) => (
+          <div key={m.id} className={`recap-frozen-bubble ${m.who}`}>
+            {m.text}
+          </div>
+        ))}
       </div>
 
-      <SessionSparkline turns={recap.turns} />
-
-      {(takeaways.correction || takeaways.tip || takeaways.keep) && (
-        <div className="takeaways">
-          <h3>Takeaways</h3>
-          {takeaways.correction && (
-            <div className="takeaway-card">
-              <span className="mission-label">
-                {takeaways.correction.category
-                  ? categoryLabel(takeaways.correction.category)
-                  : "Correction"}
-              </span>
-              <p>
-                <span className="orig">{takeaways.correction.original}</span>
-                {takeaways.correction.corrected ? (
-                  <>
-                    {" → "}
-                    <span className="fixed">{takeaways.correction.corrected}</span>
-                  </>
-                ) : null}
-              </p>
-              {takeaways.correction.explain && (
-                <p className="fb-explain">{takeaways.correction.explain}</p>
-              )}
-            </div>
-          )}
-          {takeaways.tip && (
-            <div className="takeaway-card tip">
-              <span className="mission-label">Phrase to reuse</span>
-              <p>
-                <strong>{takeaways.tip.tip.fr}</strong>
-                {takeaways.tip.tip.en ? ` — ${takeaways.tip.tip.en}` : ""}
-              </p>
-            </div>
-          )}
-          {takeaways.keep && (
-            <div className="takeaway-card keep">
-              <span className="mission-label">This worked</span>
-              <p>{takeaways.keep.original}</p>
-            </div>
-          )}
+      <div className="recap-sheet">
+        <span className="recap-handle" />
+        <div className="recap-hero">
+          <div className="recap-mascot">
+            <span className="recap-spark a" />
+            <span className="recap-spark b" />
+            <Margot size="lg" />
+          </div>
+          <div>
+            <p className="recap-kicker">{kicker}</p>
+            <h2>{recapHeadline(recap, recorded)}</h2>
+          </div>
         </div>
-      )}
 
-      {saved.length > 0 && (
-        <div className="recap-errors">
-          <h3>This session</h3>
-          {saved.map((item) => (
-            <div key={item.id} className="recap-error-row">
-              {item.isMajor || item.isMinor ? (
-                <span>
-                  {item.corrected || item.original}
-                  {item.category ? ` · ${categoryLabel(item.category)}` : ""}
-                </span>
-              ) : item.tip ? (
-                <span>{item.tip.fr}</span>
-              ) : (
-                <span>Unclear transcript</span>
-              )}
+        <div className="recap-circles">
+          <div className="recap-stat turns">
+            <div>
+              <span className="kpi-value">{recap.utterances || 0}</span>
+              <span className="kpi-label">{recap.utterances === 1 ? "tour" : "tours"}</span>
             </div>
-          ))}
+          </div>
+          <div className="recap-stat words">
+            <div>
+              <span className="kpi-value">{recap.wordsSpoken || 0}</span>
+              <span className="kpi-label">mots dits</span>
+            </div>
+          </div>
+          <div className="recap-stat misses">
+            <div>
+              <span className="kpi-value">{recap.corrections || 0}</span>
+              <span className="kpi-label">à revoir</span>
+            </div>
+          </div>
         </div>
-      )}
 
-      {(recap.vocab || []).length > 0 && (
-        <div className="vocab-review">
-          <h3>Words to keep</h3>
-          <ul>
-            {(recap.vocab || []).map((v) => (
-              <li key={v.fr}>
-                <strong>{v.fr}</strong>
-                {v.en ? <span> — {v.en}</span> : null}
-              </li>
-            ))}
-          </ul>
-          {onPracticeVocab && (
-            <button className="primary-btn" type="button" onClick={() => onPracticeVocab(recap.vocab)}>
-              Speak these words
+        {keep && (
+          <div className="keep-card">
+            <div className="section-kicker">{evening ? "À réutiliser demain" : "À garder"}</div>
+            {keep.corrected ? (
+              <p>
+                <span className="orig">{keep.errorPhrase || keep.original}</span>
+                {" → "}
+                <strong>{keep.corrected}</strong>
+                {keep.explain ? ` — ${keep.explain}` : keep.category ? ` — ${categoryLabel(keep.category)}` : ""}
+              </p>
+            ) : keep.tip ? (
+              <p>
+                <strong>{keep.tip.fr}</strong>
+                {keep.tip.en ? ` — ${keep.tip.en}` : ""}
+              </p>
+            ) : (
+              <p>{keep.original}</p>
+            )}
+          </div>
+        )}
+
+        {(recap.vocab || []).length > 0 && (
+          <div className="vocab-review">
+            <div className="section-kicker">Mots à garder</div>
+            <ul>
+              {(recap.vocab || []).map((v) => (
+                <li key={v.fr}>
+                  <strong>{v.fr}</strong>
+                  {v.en ? <span> — {v.en}</span> : null}
+                </li>
+              ))}
+            </ul>
+            {onPracticeVocab && (
+              <button className="text-btn" type="button" onClick={() => onPracticeVocab(recap.vocab)}>
+                Parler avec ces mots
+              </button>
+            )}
+          </div>
+        )}
+
+        {!recorded && (
+          <p className="empty-hint">Trop court pour la série — quelques tours de plus la prochaine fois.</p>
+        )}
+
+        <div className="recap-actions">
+          {onAgain && (
+            <button className="btn-primary-lg" type="button" onClick={onAgain}>
+              {evening ? "Rejouer la scène" : "Encore une"}
             </button>
           )}
+          <button className="btn-ghost-lg" type="button" onClick={onDone}>
+            {evening ? "Plus tard" : "Fermer"}
+          </button>
         </div>
-      )}
-
-      {recap.wordsSpoken > 0 && (
-        <p className="recap-words">{recap.wordsSpoken} words spoken · {formatMinutes(recap.durationMs)}</p>
-      )}
-      {!recorded && (
-        <p className="empty-hint">Too short to count toward your streak — try a few more turns next time.</p>
-      )}
-
-      <button className="primary-btn" onClick={onDone}>
-        Back to scenarios
-      </button>
+      </div>
     </section>
   );
 }
