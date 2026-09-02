@@ -38,20 +38,48 @@ export function useRealtimeSession() {
     lastTipAt: -99,
     feedback: [],
     turns: [],
+    transcript: [],
   });
-  const pendingChecksRef = useRef(new Set());
+  const talkingRef = useRef(false);
+  const handsFreeRef = useRef(true);
+  const [handsFree, setHandsFreeState] = useState(() => {
+    try {
+      return localStorage.getItem("frenchvoice-handsfree") !== "off";
+    } catch {
+      return true;
+    }
+  });
+  handsFreeRef.current = handsFree;
+
+  const setTalking = useCallback((on) => {
+    talkingRef.current = !!on;
+  }, []);
+
+  const setHandsFree = useCallback((on) => {
+    const next = !!on;
+    handsFreeRef.current = next;
+    setHandsFreeState(next);
+    try {
+      localStorage.setItem("frenchvoice-handsfree", next ? "on" : "off");
+    } catch {
+      /* ignore */
+    }
+  }, []);
 
   const upsertTranscriptItem = useCallback((id, who, textOrUpdater) => {
     setTranscript((prev) => {
       const idx = prev.findIndex((m) => m.id === id);
+      let next;
       if (idx === -1) {
         const text = typeof textOrUpdater === "function" ? textOrUpdater("") : textOrUpdater;
-        return [...prev, { id, who, text }];
+        next = [...prev, { id, who, text }];
+      } else {
+        next = [...prev];
+        const current = next[idx];
+        const text = typeof textOrUpdater === "function" ? textOrUpdater(current.text) : textOrUpdater;
+        next[idx] = { ...current, text };
       }
-      const next = [...prev];
-      const current = next[idx];
-      const text = typeof textOrUpdater === "function" ? textOrUpdater(current.text) : textOrUpdater;
-      next[idx] = { ...current, text };
+      statsRef.current.transcript = next;
       return next;
     });
   }, []);
@@ -105,9 +133,11 @@ export function useRealtimeSession() {
         }
 
         if (live) {
-          setTranscript((prev) =>
-            prev.map((m) => (m.id === itemId ? { ...m, feedback } : m))
-          );
+          setTranscript((prev) => {
+            const next = prev.map((m) => (m.id === itemId ? { ...m, feedback } : m));
+            statsRef.current.transcript = next;
+            return next;
+          });
         }
       } catch (err) {
         console.error("Correction check failed:", err);
@@ -136,6 +166,7 @@ export function useRealtimeSession() {
       corrections: s.corrections,
       feedback: s.feedback || [],
       turns: s.turns || [],
+      transcript: s.transcript || [],
       vocab: collectVocab(s.feedback || []),
     };
   }, []);
@@ -209,6 +240,7 @@ export function useRealtimeSession() {
         lastTipAt: -99,
         feedback: [],
         turns: [],
+        transcript: [],
       };
       setStatus("connecting");
 
@@ -239,6 +271,7 @@ export function useRealtimeSession() {
         partnerText: "",
         nextYou: 0,
         nextPartner: 0,
+        shouldSend: () => handsFreeRef.current || talkingRef.current,
       };
       sessionRef.current = session;
 
@@ -251,6 +284,7 @@ export function useRealtimeSession() {
             topic: options.topic || "",
             focus: options.focus || "",
             daily: !!options.daily,
+            resume: !!options.resume,
             vocabTargets: options.vocabTargets || [],
           }),
         });
@@ -421,6 +455,9 @@ export function useRealtimeSession() {
     endCall,
     promptWrapUp,
     promptRepeat,
+    handsFree,
+    setHandsFree,
+    setTalking,
   };
 }
 
@@ -521,6 +558,7 @@ async function startMicAndGreeting(session, sendJson, setStatus) {
   if (session.closed || session.capturer) return;
   session.capturer = await startPcmCapture(session.micStream, (b64) => {
     if (session.closed) return;
+    if (!session.shouldSend || !session.shouldSend()) return;
     sendJson({
       realtimeInput: {
         audio: {

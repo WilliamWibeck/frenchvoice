@@ -40,22 +40,32 @@ function bubbleClassName(message) {
     .join(" ");
 }
 
-export default function TranscriptPanel({ transcript, speaking }) {
+export default function TranscriptPanel({ transcript, speaking, onRepeat }) {
   return (
     <div className="transcript">
       {transcript.map((m) => {
         const fb = m.feedback;
+        const corrected = fb?.corrected;
         return (
-          <div key={m.id} className={`bubble-row ${m.who}`}>
-            {m.who === "partner" ? <span className="partner-dot" /> : null}
-            <div className={bubbleClassName(m)}>
-              {m.who === "you" && fb ? (
-                <HighlightedUtterance text={m.text} feedback={fb} />
-              ) : (
-                m.text
-              )}
-              {m.who === "you" ? <VerdictMark feedback={fb} /> : null}
+          <div key={m.id} className={`bubble-stack ${m.who}`}>
+            <div className={`bubble-row ${m.who}`}>
+              {m.who === "partner" ? <span className="partner-dot" /> : null}
+              <div className={bubbleClassName(m)}>
+                {m.who === "you" && fb ? (
+                  <HighlightedUtterance text={m.text} feedback={fb} />
+                ) : (
+                  m.text
+                )}
+                {m.who === "you" ? <VerdictMark feedback={fb} /> : null}
+              </div>
             </div>
+            {m.who === "you" && corrected && onRepeat ? (
+              <div className="bubble-actions">
+                <button type="button" className="play-fix" onClick={() => onRepeat(corrected)}>
+                  ▶ la bonne version
+                </button>
+              </div>
+            ) : null}
           </div>
         );
       })}

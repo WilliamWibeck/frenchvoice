@@ -22,6 +22,7 @@ function readSessionInput(req) {
     topic: body.topic || query.topic || "",
     focus: body.focus || query.focus || "",
     daily: !!(body.daily || query.daily),
+    resume: !!(body.resume || query.resume),
     vocabTargets: body.vocabTargets || [],
   };
 }
@@ -44,6 +45,7 @@ export default async function handler(req, res) {
     topic: input.topic,
     focus: input.focus,
     daily: input.daily,
+    resume: input.resume,
     vocabTargets: input.vocabTargets,
   });
 

@@ -4,6 +4,7 @@ import CallScreen from "./components/CallScreen.jsx";
 import SessionRecap from "./components/SessionRecap.jsx";
 import ThemeToggle from "./components/ThemeToggle.jsx";
 import { useRealtimeSession } from "./hooks/useRealtimeSession.js";
+import { saveResume } from "./lib/resume.js";
 import { loadStats, recordSession, resetStats, shouldRecord } from "./lib/stats.js";
 
 export default function App() {
@@ -30,7 +31,17 @@ export default function App() {
       return;
     }
     const recorded = shouldRecord(snapshot);
-    if (recorded) setStats(recordSession(snapshot));
+    if (recorded) {
+      setStats(recordSession(snapshot));
+      saveResume({
+        scenarioId: snapshot.scenarioId,
+        title: snapshot.scenarioTitle,
+        mission: snapshot.mission,
+        focus: snapshot.focus,
+        daily: snapshot.daily,
+        topic: snapshot.topic,
+      });
+    }
     setRecapRecorded(recorded);
     setRecap(snapshot);
   }
@@ -55,6 +66,9 @@ export default function App() {
           liveStats={session.liveStats}
           transcript={session.transcript}
           corrections={session.corrections}
+          handsFree={session.handsFree}
+          onHandsFree={session.setHandsFree}
+          onTalk={session.setTalking}
           onEnd={handleEnd}
           onTimeUp={session.promptWrapUp}
           onRepeat={session.promptRepeat}
@@ -88,3 +102,4 @@ export default function App() {
     </div>
   );
 }
+
