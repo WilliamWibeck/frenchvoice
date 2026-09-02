@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import { DAILY_MS } from "../lib/daily.js";
-import { accuracyPct, formatClock } from "../lib/stats.js";
+import { formatClock } from "../lib/stats.js";
 import { categoryLabel } from "../../lib/feedback.js";
 import TranscriptPanel from "./TranscriptPanel.jsx";
 import CorrectionsPanel from "./CorrectionsPanel.jsx";
+import Margot from "./Margot.jsx";
+import VoiceOrb from "./VoiceOrb.jsx";
 
 function useElapsed(startedAt) {
   const [now, setNow] = useState(() => Date.now());
@@ -21,7 +23,6 @@ export default function CallScreen({
   focus,
   daily,
   status,
-  statusLabel,
   startedAt,
   liveStats,
   transcript,
@@ -31,47 +32,100 @@ export default function CallScreen({
   onRepeat,
 }) {
   const elapsed = useElapsed(startedAt);
-  const acc = accuracyPct(liveStats.utterances, liveStats.corrections);
   const overTime = daily && elapsed >= DAILY_MS;
+  const listeningFirst = transcript.length === 0;
+  const timerPct = daily ? Math.min(100, (elapsed / DAILY_MS) * 100) : 0;
 
   useEffect(() => {
     if (overTime && onTimeUp) onTimeUp();
   }, [overTime, onTimeUp]);
 
-  return (
-    <section id="call-screen">
-      <div className="call-topbar">
-        <div>
-          <strong>{scenarioTitle}</strong>
-          <span className={`status-pill status-${status}`}>{statusLabel}</span>
+  if (listeningFirst) {
+    const connecting = status === "connecting";
+    return (
+      <section className="listen-screen">
+        <div className="listen-kicker">
+          {scenarioTitle || "Pratique"} · {connecting ? "connexion" : "j'écoute"}
         </div>
-        <button className="danger-btn" onClick={onEnd}>
-          End conversation
+        <VoiceOrb active={!connecting} />
+        <div className="listen-copy">
+          <h2>{connecting ? "Un instant…" : "Vas-y, je t'écoute"}</h2>
+          <p>
+            {connecting
+              ? "Margot s'installe."
+              : "Parle normalement — je te corrige après."}
+          </p>
+        </div>
+        <div className="waiting-chip">
+          <span className="waiting-avatar" />
+          Margot attend ta réponse
+          <span className="dot-wave" aria-hidden="true">
+            <i />
+            <i />
+            <i />
+          </span>
+        </div>
+        <button type="button" className="listen-end" onClick={onEnd}>
+          Terminer
         </button>
+      </section>
+    );
+  }
+
+  return (
+    <section id="call-screen" className="call-screen">
+      <div className="call-topbar">
+        <div className="call-identity">
+          <Margot size="sm" />
+          <div>
+            <h2>{scenarioTitle}</h2>
+            <div className="call-sub">
+              avec Margot
+              {focus ? ` · ${categoryLabel(focus)}` : ""}
+            </div>
+          </div>
+        </div>
+        <div className="call-tools">
+          <div className="timer-pill">
+            <span
+              className="timer-ring"
+              style={{
+                background: `conic-gradient(var(--color-accent) 0 ${timerPct}%, var(--color-neutral-300) 0)`,
+              }}
+            >
+              <span />
+            </span>
+            {formatClock(elapsed)}
+            {daily ? <span className="timer-muted"> / 15:00</span> : null}
+          </div>
+          <button type="button" className="end-btn" onClick={onEnd}>
+            Terminer
+          </button>
+        </div>
       </div>
 
-      {(mission || focus) && (
+      {mission && (
         <div className="mission-banner">
-          <span className="mission-label">Your goal</span>
-          <span>{mission}</span>
-          {focus ? <span className="focus-note">Focus: {categoryLabel(focus)}</span> : null}
+          <span className="mission-num">1</span>
+          <div>
+            <div className="mission-label">Ton objectif</div>
+            <p>{mission}</p>
+          </div>
         </div>
       )}
 
-      <div className="call-meta">
-        <span>{daily ? `${formatClock(elapsed)} / 15:00` : formatClock(elapsed)}</span>
-        <span>{liveStats.utterances} {liveStats.utterances === 1 ? "turn" : "turns"}</span>
-        <span>{liveStats.corrections} {liveStats.corrections === 1 ? "correction" : "corrections"}</span>
-        {acc != null && <span>{acc}% this session</span>}
-      </div>
-
       {overTime && (
-        <p className="wrap-banner">15 minutes in — wrap up whenever you like.</p>
+        <p className="wrap-banner">15 minutes — tu peux conclure quand tu veux.</p>
       )}
 
       <div className="call-body">
-        <TranscriptPanel transcript={transcript} />
-        <CorrectionsPanel corrections={corrections} onRepeat={onRepeat} />
+        <TranscriptPanel transcript={transcript} speaking={status === "speaking"} />
+        <CorrectionsPanel
+          corrections={corrections}
+          onRepeat={onRepeat}
+          utterances={liveStats.utterances}
+          misses={liveStats.corrections}
+        />
       </div>
     </section>
   );

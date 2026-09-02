@@ -1,61 +1,51 @@
-import { accuracyPct, formatMinutes, summarizeStats } from "../lib/stats.js";
-
-const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-
-function dayLabel(dateKey) {
-  const [y, m, d] = dateKey.split("-").map(Number);
-  return WEEKDAYS[new Date(y, m - 1, d).getDay()];
-}
+import { accuracyPct, formatMinutes, localDateKey, summarizeStats } from "../lib/stats.js";
+import { frenchDayLabel, streakAside, streakHeadline } from "../lib/copy.js";
 
 export default function StatsPanel({ stats, onReset }) {
   const summary = summarizeStats(stats);
-  const maxMinutes = Math.max(8, ...summary.week.map((d) => d.minutes));
+  const todayKey = localDateKey(Date.now());
+  const ringPct = Math.min(100, (summary.streak % 7) * (100 / 7) || (summary.streak ? 100 : 0));
 
   return (
     <section className="stats-panel" aria-label="Practice stats">
-      <div className="stats-kpis">
-        <div className="kpi">
-          <span className="kpi-value">{summary.streak}</span>
-          <span className="kpi-label">day streak</span>
+      <div className="streak-hero">
+        <div className="streak-ring">
+          <div
+            className="streak-ring-fill"
+            style={{
+              background: `conic-gradient(var(--color-accent) 0 ${ringPct}%, var(--color-accent-200) 0)`,
+            }}
+          />
+          <div className="streak-ring-inner">{summary.streak}</div>
         </div>
-        <div className="kpi">
-          <span className="kpi-value">{formatMinutes(summary.totalMs)}</span>
-          <span className="kpi-label">practiced</span>
-        </div>
-        <div className="kpi">
-          <span className="kpi-value">
-            {summary.accuracy == null ? "—" : `${summary.accuracy}%`}
-          </span>
-          <span className="kpi-label">accuracy</span>
-        </div>
-        <div className="kpi">
-          <span className="kpi-value">{summary.totalSessions}</span>
-          <span className="kpi-label">{summary.totalSessions === 1 ? "session" : "sessions"}</span>
+        <div className="streak-copy">
+          <h2>{streakHeadline(summary.streak)}</h2>
+          <p>{streakAside(summary.streak)}</p>
         </div>
       </div>
 
-      <div className="week-row" aria-label="Last 7 days">
+      <div className="week-dots" aria-label="Last 7 days">
         {summary.week.map((d) => {
-          const height = d.minutes <= 0 ? 4 : Math.max(8, Math.round((d.minutes / maxMinutes) * 40));
+          const isToday = d.date === todayKey;
+          const has = d.sessions > 0;
           return (
-            <div key={d.date} className="week-day" title={`${d.date}: ${Math.round(d.minutes)} min`}>
-              <div className="week-bar-wrap">
-                <div
-                  className={`week-bar ${d.sessions ? "has-practice" : ""}`}
-                  style={{ height: `${height}px` }}
-                />
-              </div>
-              <span>{dayLabel(d.date)}</span>
+            <div
+              key={d.date}
+              className={`week-dot${has ? " has" : " empty"}${isToday ? " today" : ""}`}
+              title={`${d.date}: ${Math.round(d.minutes)} min`}
+            >
+              <i />
+              <span>{frenchDayLabel(d.date)}</span>
             </div>
           );
         })}
       </div>
 
       {summary.categories.length > 0 && (
-        <div className="category-progress">
-          <h2>By grammar area</h2>
-          {summary.categories.map((row) => (
-            <div key={row.id} className="category-row">
+        <div>
+          <h2 className="section-kicker">Par point de grammaire</h2>
+          {summary.categories.map((row, i) => (
+            <div key={row.id} className={`category-row${i % 2 ? " warm" : ""}`}>
               <span className="category-name">{row.label}</span>
               <div className="category-bar-track" aria-hidden="true">
                 <div
@@ -65,19 +55,6 @@ export default function StatsPanel({ stats, onReset }) {
               </div>
               <span className="category-meta">
                 {row.accuracy == null ? "—" : `${row.accuracy}%`}
-                <span> · {row.attempts}</span>
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
-      {summary.byScenario.length > 0 && (
-        <div className="scenario-stats">
-          {summary.byScenario.map((row) => (
-            <div key={row.id} className="scenario-stat-row">
-              <span>{row.title}</span>
-              <span>
-                {row.sessions} {row.sessions === 1 ? "session" : "sessions"} · {formatMinutes(row.ms)}
               </span>
             </div>
           ))}
@@ -85,21 +62,17 @@ export default function StatsPanel({ stats, onReset }) {
       )}
 
       {summary.recent.length > 0 && (
-        <div className="recent-list">
-          <h2>Recent sessions</h2>
-          {summary.recent.map((s) => {
+        <div>
+          <h2 className="section-kicker">Dernières séances</h2>
+          {summary.recent.slice(0, 4).map((s) => {
             const acc = accuracyPct(s.utterances, s.corrections);
             return (
               <div key={s.id} className="recent-item">
-                <div>
-                  <strong>{s.scenarioTitle}</strong>
-                  <span className="recent-mission">{s.mission}</span>
-                </div>
-                <div className="recent-meta">
+                <span>{s.scenarioTitle}</span>
+                <span className="recent-meta">
                   {formatMinutes(s.durationMs)}
-                  {s.utterances ? ` · ${s.utterances} turns` : ""}
                   {acc == null ? "" : ` · ${acc}%`}
-                </div>
+                </span>
               </div>
             );
           })}
@@ -107,8 +80,8 @@ export default function StatsPanel({ stats, onReset }) {
       )}
 
       {summary.totalSessions > 0 && (
-        <button type="button" className="text-btn" onClick={onReset}>
-          Reset stats
+        <button type="button" className="text-btn reset" onClick={onReset}>
+          Réinitialiser
         </button>
       )}
     </section>

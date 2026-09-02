@@ -39,6 +39,7 @@ export function useRealtimeSession() {
     feedback: [],
     turns: [],
   });
+  const pendingChecksRef = useRef(new Set());
 
   const upsertTranscriptItem = useCallback((id, who, textOrUpdater) => {
     setTranscript((prev) => {
@@ -55,54 +56,65 @@ export function useRealtimeSession() {
     });
   }, []);
 
-  const requestCorrectionCheck = useCallback(async (itemId, text) => {
-    try {
-      const res = await fetch("/api/correct", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text }),
-      });
-      const data = await res.json();
-      if (!sessionRef.current || sessionRef.current.closed) return;
+  const requestCorrectionCheck = useCallback((itemId, text) => {
+    const requestStartedAt = statsRef.current.startedAt;
+    const run = (async () => {
+      try {
+        const res = await fetch("/api/correct", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text }),
+        });
+        const data = await res.json();
+        if (statsRef.current.startedAt !== requestStartedAt) return;
 
-      let feedback = data.feedback;
-      if (!feedback && data.correction) {
-        feedback = normalizeFeedback({ correction: data.correction }, text);
+        let feedback = data.feedback;
+        if (!feedback && data.correction) {
+          feedback = normalizeFeedback({ correction: data.correction }, text);
+        }
+        if (!feedback) return;
+        feedback = { ...feedback, id: `fb-${itemId}`, itemId };
+
+        const sinceTip = statsRef.current.utterances - statsRef.current.lastTipAt;
+        if (feedback.tip && (feedback.isMajor || sinceTip < 3)) {
+          feedback = { ...feedback, tip: null };
+        } else if (feedback.tip) {
+          statsRef.current.lastTipAt = statsRef.current.utterances;
+        }
+
+        statsRef.current.feedback.push(feedback);
+        statsRef.current.turns.push({
+          itemId,
+          verdict: feedback.verdict,
+          severity: feedback.severity,
+          category: feedback.category,
+        });
+
+        if (feedback.isMajor) {
+          statsRef.current.corrections += 1;
+        }
+
+        const live = !sessionRef.current?.closed;
+        if (live && feedback.isMajor) {
+          setLiveStats((prev) => ({ ...prev, corrections: statsRef.current.corrections }));
+        }
+
+        const showInPanel = feedback.isMajor || feedback.isMinor || feedback.verdict === "unclear" || feedback.tip;
+        if (live && showInPanel) {
+          setCorrections((prev) => [...prev, feedback]);
+        }
+
+        if (live) {
+          setTranscript((prev) =>
+            prev.map((m) => (m.id === itemId ? { ...m, feedback } : m))
+          );
+        }
+      } catch (err) {
+        console.error("Correction check failed:", err);
       }
-      if (!feedback) return;
-      feedback = { ...feedback, id: `fb-${itemId}`, itemId };
-
-      const sinceTip = statsRef.current.utterances - statsRef.current.lastTipAt;
-      if (feedback.tip && (feedback.isMajor || sinceTip < 3)) {
-        feedback = { ...feedback, tip: null };
-      } else if (feedback.tip) {
-        statsRef.current.lastTipAt = statsRef.current.utterances;
-      }
-
-      statsRef.current.feedback.push(feedback);
-      statsRef.current.turns.push({
-        itemId,
-        verdict: feedback.verdict,
-        severity: feedback.severity,
-        category: feedback.category,
-      });
-
-      if (feedback.isMajor) {
-        statsRef.current.corrections += 1;
-        setLiveStats((prev) => ({ ...prev, corrections: statsRef.current.corrections }));
-      }
-
-      const showInPanel = feedback.isMajor || feedback.isMinor || feedback.verdict === "unclear" || feedback.tip;
-      if (showInPanel) {
-        setCorrections((prev) => [...prev, feedback]);
-      }
-
-      setTranscript((prev) =>
-        prev.map((m) => (m.id === itemId ? { ...m, feedback } : m))
-      );
-    } catch (err) {
-      console.error("Correction check failed:", err);
-    }
+    })();
+    pendingChecksRef.current.add(run);
+    run.finally(() => pendingChecksRef.current.delete(run));
   }, []);
 
   const snapshotRecap = useCallback(() => {
@@ -128,26 +140,47 @@ export function useRealtimeSession() {
     };
   }, []);
 
-  const endCall = useCallback(() => {
+  const endCall = useCallback(async () => {
     const session = sessionRef.current;
-    if (session) session.closed = true;
+    if (session?.endPromise) return session.endPromise;
 
-    if (session?.ws) {
-      try { session.ws.close(); } catch {}
-    }
-    if (session?.capturer) {
-      session.capturer.stop().catch(() => {});
-    }
-    if (session?.player) {
-      session.player.destroy().catch(() => {});
-    }
-    if (session?.micStream) {
-      session.micStream.getTracks().forEach((t) => t.stop());
-    }
-    sessionRef.current = session || { closed: true };
-    setStatus("ended");
-    return snapshotRecap();
-  }, [snapshotRecap]);
+    const run = (async () => {
+      if (session) session.closed = true;
+
+      if (session?.ws) {
+        try { session.ws.close(); } catch {}
+      }
+      if (session?.capturer) {
+        session.capturer.stop().catch(() => {});
+      }
+      if (session?.player) {
+        session.player.destroy().catch(() => {});
+      }
+      if (session?.micStream) {
+        session.micStream.getTracks().forEach((t) => t.stop());
+      }
+
+      finishUserTurn(session, statsRef, setLiveStats, requestCorrectionCheck);
+
+      const pending = [...pendingChecksRef.current];
+      if (pending.length) {
+        await Promise.race([
+          Promise.allSettled(pending),
+          new Promise((resolve) => setTimeout(resolve, 2500)),
+        ]);
+      }
+
+      sessionRef.current = session || { closed: true };
+      setStatus("ended");
+      const recap = snapshotRecap();
+      if (session) session.recap = recap;
+      else sessionRef.current.recap = recap;
+      return recap;
+    })();
+
+    if (session) session.endPromise = run;
+    return run;
+  }, [snapshotRecap, requestCorrectionCheck]);
 
   const startCall = useCallback(
     async (scenarioId, title, options = {}) => {
@@ -161,6 +194,7 @@ export function useRealtimeSession() {
       setDaily(!!options.daily);
       setStartedAt(null);
       setLiveStats({ utterances: 0, wordsSpoken: 0, corrections: 0 });
+      pendingChecksRef.current = new Set();
       statsRef.current = {
         scenarioId,
         scenarioTitle: title,
@@ -321,7 +355,7 @@ export function useRealtimeSession() {
         console.error(err);
         setError(err.message || String(err));
         setStatus("ended");
-        endCall();
+        await endCall();
         return false;
       }
     },
@@ -417,42 +451,31 @@ function handleLiveMessage(
   if (parts) {
     for (const part of parts) {
       if (part.inlineData && part.inlineData.data && session.player) {
+        finishUserTurn(session, statsRef, setLiveStats, requestCorrectionCheck);
         session.player.playBase64Pcm16(part.inlineData.data);
         setStatus("speaking");
       }
     }
   }
 
-  if (content.inputTranscription && content.inputTranscription.text) {
-    const chunk = content.inputTranscription.text;
-    const finished = !!content.inputTranscription.finished;
-    if (!session.userTurnId) {
-      session.userTurnId = `you-${session.nextYou++}`;
-      session.userText = "";
-    }
-    session.userText += chunk;
-    upsertTranscriptItem(session.userTurnId, "you", session.userText);
-    setStatus("listening");
-    if (finished) {
-      const spoken = session.userText.trim();
-      const itemId = session.userTurnId;
-      session.userTurnId = null;
-      session.userText = "";
-      if (spoken) {
-        const words = spoken.split(/\s+/).filter(Boolean).length;
-        statsRef.current.utterances += 1;
-        statsRef.current.wordsSpoken += words;
-        setLiveStats({
-          utterances: statsRef.current.utterances,
-          wordsSpoken: statsRef.current.wordsSpoken,
-          corrections: statsRef.current.corrections,
-        });
-        requestCorrectionCheck(itemId, spoken);
+  if (content.inputTranscription) {
+    const chunk = content.inputTranscription.text || "";
+    if (chunk) {
+      if (!session.userTurnId) {
+        session.userTurnId = `you-${session.nextYou++}`;
+        session.userText = "";
       }
+      session.userText += chunk;
+      upsertTranscriptItem(session.userTurnId, "you", session.userText);
+      setStatus("listening");
+    }
+    if (content.inputTranscription.finished) {
+      finishUserTurn(session, statsRef, setLiveStats, requestCorrectionCheck);
     }
   }
 
   if (content.outputTranscription && content.outputTranscription.text) {
+    finishUserTurn(session, statsRef, setLiveStats, requestCorrectionCheck);
     const chunk = content.outputTranscription.text;
     if (!session.partnerTurnId) {
       session.partnerTurnId = `partner-${session.nextPartner++}`;
@@ -468,11 +491,30 @@ function handleLiveMessage(
     setStatus("listening");
   }
 
-  if (content.turnComplete) {
+  if (content.turnComplete || content.generationComplete) {
+    finishUserTurn(session, statsRef, setLiveStats, requestCorrectionCheck);
     session.partnerTurnId = null;
     session.partnerText = "";
     setStatus("listening");
   }
+}
+
+function finishUserTurn(session, statsRef, setLiveStats, requestCorrectionCheck) {
+  if (!session) return;
+  const spoken = (session.userText || "").trim();
+  const itemId = session.userTurnId;
+  session.userTurnId = null;
+  session.userText = "";
+  if (!itemId || !spoken) return;
+  const words = spoken.split(/\s+/).filter(Boolean).length;
+  statsRef.current.utterances += 1;
+  statsRef.current.wordsSpoken += words;
+  setLiveStats({
+    utterances: statsRef.current.utterances,
+    wordsSpoken: statsRef.current.wordsSpoken,
+    corrections: statsRef.current.corrections,
+  });
+  requestCorrectionCheck(itemId, spoken);
 }
 
 async function startMicAndGreeting(session, sendJson, setStatus) {

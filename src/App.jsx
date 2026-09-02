@@ -21,8 +21,8 @@ export default function App() {
     if (ok) setInCall(true);
   }
 
-  function handleEnd() {
-    const snapshot = session.endCall();
+  async function handleEnd() {
+    const snapshot = await session.endCall();
     setInCall(false);
     if (!snapshot) {
       setRecap(null);
@@ -35,54 +35,54 @@ export default function App() {
   }
 
   function handleResetStats() {
-    if (!window.confirm("Clear all practice stats on this device?")) return;
+    if (!window.confirm("Effacer toutes les stats sur cet appareil ?")) return;
     setStats(resetStats());
   }
 
   return (
-    <>
-      <header className="app-header">
-        <h1>🇫🇷 Pratique orale</h1>
-        <p className="subtitle">Voice-to-voice French practice · Level: A1–A2 (beginner)</p>
-      </header>
-
-      <main>
-        {inCall ? (
-          <CallScreen
-            scenarioTitle={session.scenarioTitle}
-            mission={session.mission}
-            focus={session.focus}
-            daily={session.daily}
-            status={session.status}
-            statusLabel={session.statusLabel}
-            startedAt={session.startedAt}
-            liveStats={session.liveStats}
-            transcript={session.transcript}
-            corrections={session.corrections}
-            onEnd={handleEnd}
-            onTimeUp={session.promptWrapUp}
-            onRepeat={session.promptRepeat}
-          />
-        ) : recap ? (
-          <SessionRecap
-            recap={recap}
-            recorded={recapRecorded}
-            onDone={() => setRecap(null)}
-            onPracticeVocab={(words) => {
-              setRecap(null);
-              handleSelect("free", "Discussion libre", { vocabTargets: words });
-            }}
-          />
-        ) : (
-          <ScenarioPicker
-            onSelect={handleSelect}
-            disabled={connecting}
-            error={session.error}
-            stats={stats}
-            onResetStats={handleResetStats}
-          />
-        )}
-      </main>
-    </>
+    <div className="app-shell">
+      {inCall ? (
+        <CallScreen
+          scenarioTitle={session.scenarioTitle}
+          mission={session.mission}
+          focus={session.focus}
+          daily={session.daily}
+          status={session.status}
+          statusLabel={session.statusLabel}
+          startedAt={session.startedAt}
+          liveStats={session.liveStats}
+          transcript={session.transcript}
+          corrections={session.corrections}
+          onEnd={handleEnd}
+          onTimeUp={session.promptWrapUp}
+          onRepeat={session.promptRepeat}
+        />
+      ) : recap ? (
+        <SessionRecap
+          recap={recap}
+          recorded={recapRecorded}
+          onDone={() => setRecap(null)}
+          onAgain={() =>
+            handleSelect(recap.scenarioId, recap.scenarioTitle, {
+              topic: recap.topic || "",
+              focus: recap.focus || "",
+              daily: !!recap.daily,
+            })
+          }
+          onPracticeVocab={(words) => {
+            setRecap(null);
+            handleSelect("free", "Discussion libre", { vocabTargets: words });
+          }}
+        />
+      ) : (
+        <ScenarioPicker
+          onSelect={handleSelect}
+          disabled={connecting}
+          error={session.error}
+          stats={stats}
+          onResetStats={handleResetStats}
+        />
+      )}
+    </div>
   );
 }

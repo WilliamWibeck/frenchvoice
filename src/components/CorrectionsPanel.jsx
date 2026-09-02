@@ -4,25 +4,26 @@ function FeedbackCard({ item, onRepeat }) {
   if (item.verdict === "unclear") {
     return (
       <div className="correction-item unclear">
-        <span className="fb-kicker">Might have misheard</span>
+        <div className="fb-kicker">Peut-être mal entendu</div>
         <p>{item.original}</p>
-        <p className="fb-explain">I did not treat this as a grammar mistake.</p>
+        <p className="fb-explain">Je n'ai pas traité ça comme une faute.</p>
       </div>
     );
   }
 
+  const kind = item.isMajor ? "major" : item.isMinor ? "minor" : "tip-only";
   return (
-    <div className={`correction-item ${item.isMajor ? "major" : item.isMinor ? "minor" : "tip-only"}`}>
+    <div className={`correction-item ${kind}`}>
       {item.category ? (
-        <span className="fb-kicker">{categoryLabel(item.category)}</span>
+        <div className="fb-kicker">{categoryLabel(item.category)}</div>
       ) : item.tip ? (
-        <span className="fb-kicker">Tip</span>
+        <div className="fb-kicker">À réutiliser</div>
       ) : null}
       {item.corrected && (
         <p>
-          <span className="orig">{item.original}</span>
+          <span className="orig">{item.errorPhrase || item.original}</span>
           {" → "}
-          <span className="fixed">{item.corrected}</span>
+          <strong className="fixed">{item.corrected}</strong>
         </p>
       )}
       {item.explain && <p className="fb-explain">{item.explain}</p>}
@@ -34,31 +35,28 @@ function FeedbackCard({ item, onRepeat }) {
       )}
       {item.corrected && onRepeat && (
         <button type="button" className="repeat-btn" onClick={() => onRepeat(item.corrected)}>
-          Say it again
+          Redis-le
         </button>
       )}
     </div>
   );
 }
 
-export default function CorrectionsPanel({ corrections, onRepeat }) {
+export default function CorrectionsPanel({ corrections, onRepeat, utterances = 0, misses = 0 }) {
   const visible = corrections.filter(
     (c) => c.isMajor || c.isMinor || c.verdict === "unclear" || c.tip
   );
 
   return (
-    <div className="panel corrections-panel">
-      <h2>Corrections &amp; tips</h2>
-      <div className="corrections">
-        {visible.length === 0 && (
-          <p className="empty-hint">
-            Real mistakes show up here after you speak. Tips appear only now and then.
-          </p>
-        )}
-        {visible.map((c) => (
-          <FeedbackCard key={c.id} item={c} onRepeat={onRepeat} />
-        ))}
+    <aside className="margin-col">
+      <div className="section-kicker">Dans la marge</div>
+      {visible.map((c) => (
+        <FeedbackCard key={c.id} item={c} onRepeat={onRepeat} />
+      ))}
+      <div className="call-live-meta">
+        <span className="live-count">{utterances}</span>
+        tours · {misses} {misses === 1 ? "correction" : "corrections"}
       </div>
-    </div>
+    </aside>
   );
 }

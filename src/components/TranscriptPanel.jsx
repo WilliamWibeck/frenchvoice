@@ -2,46 +2,73 @@ function HighlightedUtterance({ text, feedback }) {
   const span = feedback && feedback.span;
   if (!text) return null;
   if (!span || span.start < 0 || span.end <= span.start || span.end > text.length) {
-    return <span>{text}</span>;
+    return text;
   }
-  const markClass = feedback.isMajor || feedback.isMinor ? "err-span" : "unclear-span";
+  const markClass = feedback.isMajor
+    ? "err-span major"
+    : feedback.isMinor
+      ? "err-span minor"
+      : "unclear-span";
   return (
-    <span>
+    <>
       {text.slice(0, span.start)}
       <mark className={markClass}>{text.slice(span.start, span.end)}</mark>
       {text.slice(span.end)}
-    </span>
+    </>
   );
 }
 
-export default function TranscriptPanel({ transcript }) {
+function VerdictMark({ feedback }) {
+  if (!feedback) return null;
+  if (feedback.verdict === "ok") return <span className="verdict-mark ok">✓ nickel</span>;
+  if (feedback.isMajor || feedback.isMinor) return null;
+  if (feedback.verdict === "unclear") return <span className="verdict-mark unclear">?</span>;
+  return null;
+}
+
+function bubbleClassName(message) {
+  const fb = message.feedback;
+  return [
+    "bubble",
+    message.who,
+    fb?.isMajor ? "has-error" : "",
+    fb?.isMinor ? "has-minor" : "",
+    fb?.verdict === "ok" ? "is-ok" : "",
+    fb?.verdict === "unclear" ? "is-unclear" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+}
+
+export default function TranscriptPanel({ transcript, speaking }) {
   return (
-    <div className="panel transcript-panel">
-      <h2>Conversation</h2>
-      <div className="transcript">
-        {transcript.length === 0 && <p className="empty-hint">Say something to get started…</p>}
-        {transcript.map((m) => {
-          const fb = m.feedback;
-          const bubbleClass = [
-            "bubble",
-            m.who,
-            fb?.isMajor ? "has-error" : "",
-            fb?.verdict === "ok" ? "is-ok" : "",
-          ]
-            .filter(Boolean)
-            .join(" ");
-          return (
-            <div key={m.id} className={bubbleClass}>
-              <span className="label">{m.who === "you" ? "You" : "Partner"}</span>
+    <div className="transcript">
+      {transcript.map((m) => {
+        const fb = m.feedback;
+        return (
+          <div key={m.id} className={`bubble-row ${m.who}`}>
+            {m.who === "partner" ? <span className="partner-dot" /> : null}
+            <div className={bubbleClassName(m)}>
               {m.who === "you" && fb ? (
                 <HighlightedUtterance text={m.text} feedback={fb} />
               ) : (
-                <span>{m.text}</span>
+                m.text
               )}
+              {m.who === "you" ? <VerdictMark feedback={fb} /> : null}
             </div>
-          );
-        })}
-      </div>
+          </div>
+        );
+      })}
+      {speaking && (
+        <div className="bubble-row partner">
+          <span className="partner-dot live" />
+          <div className="typing" aria-label="Margot is speaking">
+            <i />
+            <i />
+            <i />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
