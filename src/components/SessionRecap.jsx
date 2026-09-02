@@ -2,40 +2,53 @@ import { formatClock } from "../lib/stats.js";
 import { categoryLabel, pickTakeaways } from "../../lib/feedback.js";
 import { recapHeadline } from "../lib/copy.js";
 import Margot from "./Margot.jsx";
+import { useTheme } from "./ThemeToggle.jsx";
 
 export default function SessionRecap({ recap, recorded, onDone, onAgain, onPracticeVocab }) {
   const takeaways = pickTakeaways(recap.feedback);
   const keep = takeaways.correction || takeaways.tip;
-  const kicker = recap.daily
-    ? `Séance du jour${recap.scenarioTitle ? ` · ${recap.scenarioTitle}` : ""}`
-    : recap.scenarioTitle || "Séance";
+  const { theme } = useTheme();
+  const evening = theme === "soir";
+  const kicker = evening
+    ? "Séance terminée"
+    : recap.daily
+      ? `Séance du jour${recap.scenarioTitle ? ` · ${recap.scenarioTitle}` : ""}`
+      : recap.scenarioTitle || "Séance";
 
   return (
     <section className="recap-screen">
-      <div className="recap-mascot">
-        <span className="recap-spark a" />
-        <span className="recap-spark b" />
-        <Margot size="lg" />
-      </div>
-      <div>
-        <p className="recap-kicker">{kicker}</p>
-        <h2>{recapHeadline(recap, recorded)}</h2>
+      <div className="recap-hero">
+        <div className="recap-mascot">
+          <span className="recap-spark a" />
+          <span className="recap-spark b" />
+          <Margot size="lg" />
+        </div>
+        <div>
+          <p className="recap-kicker">{kicker}</p>
+          <h2>{recapHeadline(recap, recorded)}</h2>
+        </div>
       </div>
 
       <div className="recap-circles">
-        <div className="recap-stat">
+        <div className="recap-stat time">
           <div>
             <span className="kpi-value">{formatClock(recap.durationMs)}</span>
-            <span className="kpi-label">temps</span>
+            <span className="kpi-label">{evening ? "temps parlé" : "temps"}</span>
           </div>
         </div>
-        <div className="recap-stat">
+        <div className="recap-stat turns">
           <div>
             <span className="kpi-value">{recap.utterances || 0}</span>
             <span className="kpi-label">{recap.utterances === 1 ? "tour" : "tours"}</span>
           </div>
         </div>
-        <div className="recap-stat">
+        <div className="recap-stat words">
+          <div>
+            <span className="kpi-value">{recap.wordsSpoken || 0}</span>
+            <span className="kpi-label">mots dits</span>
+          </div>
+        </div>
+        <div className="recap-stat misses">
           <div>
             <span className="kpi-value">{recap.corrections || 0}</span>
             <span className="kpi-label">à revoir</span>
@@ -45,7 +58,7 @@ export default function SessionRecap({ recap, recorded, onDone, onAgain, onPract
 
       {keep && (
         <div className="keep-card">
-          <div className="section-kicker">À garder</div>
+          <div className="section-kicker">{evening ? "À réutiliser demain" : "À garder"}</div>
           {keep.corrected ? (
             <p>
               <strong>{keep.corrected}</strong>
@@ -88,7 +101,7 @@ export default function SessionRecap({ recap, recorded, onDone, onAgain, onPract
       <div className="recap-actions">
         {onAgain && (
           <button className="btn-primary-lg" type="button" onClick={onAgain}>
-            Encore une
+            {evening ? "Rejouer la scène" : "Encore une"}
           </button>
         )}
         <button className="btn-ghost-lg" type="button" onClick={onDone}>

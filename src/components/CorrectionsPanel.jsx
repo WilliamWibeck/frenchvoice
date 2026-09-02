@@ -1,4 +1,5 @@
 import { categoryLabel } from "../../lib/feedback.js";
+import { useTheme } from "./ThemeToggle.jsx";
 
 function FeedbackCard({ item, onRepeat }) {
   if (item.verdict === "unclear") {
@@ -43,13 +44,14 @@ function FeedbackCard({ item, onRepeat }) {
 }
 
 export default function CorrectionsPanel({ corrections, onRepeat, utterances = 0, misses = 0 }) {
+  const { theme } = useTheme();
   const visible = corrections.filter(
     (c) => c.isMajor || c.isMinor || c.verdict === "unclear" || c.tip
   );
 
   return (
     <aside className="margin-col">
-      <div className="section-kicker">Dans la marge</div>
+      <div className="section-kicker">{theme === "soir" ? "Corrections" : "Dans la marge"}</div>
       {visible.map((c) => (
         <FeedbackCard key={c.id} item={c} onRepeat={onRepeat} />
       ))}

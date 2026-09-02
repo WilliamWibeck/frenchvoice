@@ -2,6 +2,7 @@ import { useState } from "react";
 import ScenarioPicker from "./components/ScenarioPicker.jsx";
 import CallScreen from "./components/CallScreen.jsx";
 import SessionRecap from "./components/SessionRecap.jsx";
+import ThemeToggle from "./components/ThemeToggle.jsx";
 import { useRealtimeSession } from "./hooks/useRealtimeSession.js";
 import { loadStats, recordSession, resetStats, shouldRecord } from "./lib/stats.js";
 
@@ -41,6 +42,7 @@ export default function App() {
 
   return (
     <div className="app-shell">
+      <ThemeToggle />
       {inCall ? (
         <CallScreen
           scenarioTitle={session.scenarioTitle}

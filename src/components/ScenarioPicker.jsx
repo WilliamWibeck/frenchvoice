@@ -5,6 +5,7 @@ import { pickWeakFocus } from "../lib/weakpoints.js";
 import { recentVocab, summarizeStats } from "../lib/stats.js";
 import StatsPanel from "./StatsPanel.jsx";
 import Margot from "./Margot.jsx";
+import { useTheme } from "./ThemeToggle.jsx";
 
 export default function ScenarioPicker({ onSelect, disabled, error, stats, onResetStats }) {
   const [scenarios, setScenarios] = useState([]);
@@ -23,6 +24,8 @@ export default function ScenarioPicker({ onSelect, disabled, error, stats, onRes
   const words = recentVocab(stats);
   const customTopic = topic.trim();
   const summary = summarizeStats(stats);
+  const { theme } = useTheme();
+  const evening = theme === "soir";
 
   function startDaily() {
     if (disabled) return;
@@ -41,17 +44,27 @@ export default function ScenarioPicker({ onSelect, disabled, error, stats, onRes
     <section id="picker-screen" className="screen-card">
       <div className="picker-top">
         <h1 className="brand">Pratique orale</h1>
-        {summary.streak > 0 && (
+        {evening ? (
+          <span className="soir-meta">
+            {new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })} · A1–A2
+          </span>
+        ) : summary.streak > 0 ? (
           <span className="streak-pill">
             <span className="streak-dot" />
             {summary.streak} {summary.streak === 1 ? "jour" : "jours"}
           </span>
-        )}
+        ) : null}
       </div>
 
       <div className="margot-hello">
+        <span className="hello-glow" aria-hidden="true" />
         <Margot size="md" />
-        <p className="speech">Salut ! On parle de quoi aujourd'hui ?</p>
+        <p className="speech">
+          <span className="speech-title">
+            {evening ? "Bonsoir ! Tu as cinq minutes ?" : "Salut ! On parle de quoi aujourd'hui ?"}
+          </span>
+          {evening && <span className="speech-sub">Margot a une nouvelle scène pour toi.</span>}
+        </p>
       </div>
 
       <form
@@ -84,6 +97,7 @@ export default function ScenarioPicker({ onSelect, disabled, error, stats, onRes
             <i />
             <i />
           </span>
+          <span className="daily-arrow" aria-hidden="true">→</span>
         </button>
       </form>
 
@@ -129,8 +143,13 @@ export default function ScenarioPicker({ onSelect, disabled, error, stats, onRes
             onClick={() => onSelect(s.id, s.title, { topic: topic.trim(), focus })}
           >
             <span className="scenario-blob" />
-            <span className="scenario-title">{s.title}</span>
-            {s.blurb && <span className="scenario-blurb">{s.blurb}</span>}
+            <span className="scenario-index">
+              {s.id === "surprise" ? "?" : String(i + 1).padStart(2, "0")}
+            </span>
+            <span className="scenario-copy">
+              <span className="scenario-title">{s.title}</span>
+              {s.blurb && <span className="scenario-blurb">{s.blurb}</span>}
+            </span>
           </button>
         ))}
       </div>

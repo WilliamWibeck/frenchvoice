@@ -6,6 +6,7 @@ import TranscriptPanel from "./TranscriptPanel.jsx";
 import CorrectionsPanel from "./CorrectionsPanel.jsx";
 import Margot from "./Margot.jsx";
 import VoiceOrb from "./VoiceOrb.jsx";
+import { useTheme } from "./ThemeToggle.jsx";
 
 function useElapsed(startedAt) {
   const [now, setNow] = useState(() => Date.now());
@@ -35,6 +36,8 @@ export default function CallScreen({
   const overTime = daily && elapsed >= DAILY_MS;
   const listeningFirst = transcript.length === 0;
   const timerPct = daily ? Math.min(100, (elapsed / DAILY_MS) * 100) : 0;
+  const { theme } = useTheme();
+  const evening = theme === "soir";
 
   useEffect(() => {
     if (overTime && onTimeUp) onTimeUp();
@@ -45,25 +48,31 @@ export default function CallScreen({
     return (
       <section className="listen-screen">
         <div className="listen-kicker">
-          {scenarioTitle || "Pratique"} · {connecting ? "connexion" : "j'écoute"}
+          {scenarioTitle || "Pratique"} · {connecting ? "connexion" : evening ? "en direct" : "j'écoute"}
         </div>
         <VoiceOrb active={!connecting} />
         <div className="listen-copy">
-          <h2>{connecting ? "Un instant…" : "Vas-y, je t'écoute"}</h2>
+          <h2>{connecting ? "Un instant…" : evening ? "Je t'écoute" : "Vas-y, je t'écoute"}</h2>
           <p>
             {connecting
               ? "Margot s'installe."
-              : "Parle normalement — je te corrige après."}
+              : evening
+                ? "Prends ton temps. Les corrections attendent la fin du tour."
+                : "Parle normalement — je te corrige après."}
           </p>
         </div>
         <div className="waiting-chip">
           <span className="waiting-avatar" />
-          Margot attend ta réponse
-          <span className="dot-wave" aria-hidden="true">
-            <i />
-            <i />
-            <i />
-          </span>
+          {evening && mission
+            ? `Objectif : ${mission}`
+            : "Margot attend ta réponse"}
+          {!evening && (
+            <span className="dot-wave" aria-hidden="true">
+              <i />
+              <i />
+              <i />
+            </span>
+          )}
         </div>
         <button type="button" className="listen-end" onClick={onEnd}>
           Terminer
@@ -80,8 +89,9 @@ export default function CallScreen({
           <div>
             <h2>{scenarioTitle}</h2>
             <div className="call-sub">
-              avec Margot
-              {focus ? ` · ${categoryLabel(focus)}` : ""}
+              {evening
+                ? `${mission ? `Objectif : ${mission} · ` : ""}${focus ? categoryLabel(focus) : "avec Margot"}`
+                : `avec Margot${focus ? ` · ${categoryLabel(focus)}` : ""}`}
             </div>
           </div>
         </div>
@@ -97,6 +107,9 @@ export default function CallScreen({
             </span>
             {formatClock(elapsed)}
             {daily ? <span className="timer-muted"> / 15:00</span> : null}
+          </div>
+          <div className="timer-bar" aria-hidden="true">
+            <span style={{ width: `${daily ? timerPct : 8}%` }} />
           </div>
           <button type="button" className="end-btn" onClick={onEnd}>
             Terminer

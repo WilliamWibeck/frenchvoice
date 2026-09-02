@@ -37,6 +37,11 @@ export function streakAside(n) {
   return "Margot est fière — tu tiens le rythme.";
 }
 
+export function streakHeadlineSoir(n) {
+  if (!n) return "0 jour";
+  return n === 1 ? "1 jour" : `${n} jours`;
+}
+
 export function recapHeadline(recap, recorded) {
   if (!recorded) return "C'était trop court pour compter.";
   if (recap.corrections === 0 && recap.utterances > 0) return "C'était fluide.";

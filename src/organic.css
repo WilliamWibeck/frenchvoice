@@ -63,6 +63,21 @@
   --shadow-lg: 0 12px 32px color-mix(in srgb, #2e2b25 22%, transparent);
 }
 
+html[data-theme="soir"] {
+  color-scheme: dark;
+  --color-bg: var(--color-neutral-900);
+  --color-surface: var(--color-neutral-800);
+  --color-text: var(--color-neutral-100);
+  --color-accent: var(--color-accent-400);
+  --color-accent-2: var(--color-accent-2-400);
+  --color-divider: color-mix(in srgb, var(--color-neutral-100) 22%, transparent);
+  --shadow-sm: 0 0 0 1px color-mix(in srgb, var(--color-neutral-100) 8%, transparent);
+  --shadow-md: 0 8px 28px color-mix(in srgb, #000 40%, transparent);
+  --shadow-lg: 0 18px 44px color-mix(in srgb, #000 52%, transparent);
+}
+html[data-theme="soir"] .btn-primary:hover { background: var(--color-accent-300); }
+html[data-theme="soir"] .btn-primary:active { background: var(--color-accent-200); }
+
 body {
   background: var(--color-bg);
   color: var(--color-text);

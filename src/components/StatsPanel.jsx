@@ -1,10 +1,15 @@
 import { accuracyPct, formatMinutes, localDateKey, summarizeStats } from "../lib/stats.js";
-import { frenchDayLabel, streakAside, streakHeadline } from "../lib/copy.js";
+import { frenchDayLabel, streakAside, streakHeadline, streakHeadlineSoir } from "../lib/copy.js";
+import { useTheme } from "./ThemeToggle.jsx";
 
 export default function StatsPanel({ stats, onReset }) {
   const summary = summarizeStats(stats);
   const todayKey = localDateKey(Date.now());
+  const { theme } = useTheme();
+  const evening = theme === "soir";
   const ringPct = Math.min(100, (summary.streak % 7) * (100 / 7) || (summary.streak ? 100 : 0));
+  const maxMinutes = Math.max(8, ...summary.week.map((d) => d.minutes));
+  const weekMinutes = summary.week.reduce((sum, d) => sum + d.minutes, 0);
 
   return (
     <section className="stats-panel" aria-label="Practice stats">
@@ -19,8 +24,12 @@ export default function StatsPanel({ stats, onReset }) {
           <div className="streak-ring-inner">{summary.streak}</div>
         </div>
         <div className="streak-copy">
-          <h2>{streakHeadline(summary.streak)}</h2>
-          <p>{streakAside(summary.streak)}</p>
+          <h2>{evening ? streakHeadlineSoir(summary.streak) : streakHeadline(summary.streak)}</h2>
+          <p>
+            {evening
+              ? `de suite · ${Math.round(weekMinutes)} min cette semaine`
+              : streakAside(summary.streak)}
+          </p>
         </div>
       </div>
 
@@ -28,10 +37,12 @@ export default function StatsPanel({ stats, onReset }) {
         {summary.week.map((d) => {
           const isToday = d.date === todayKey;
           const has = d.sessions > 0;
+          const bar = d.minutes <= 0 ? 8 : Math.max(16, Math.round((d.minutes / maxMinutes) * 74));
           return (
             <div
               key={d.date}
               className={`week-dot${has ? " has" : " empty"}${isToday ? " today" : ""}`}
+              style={{ "--week-h": `${bar}px` }}
               title={`${d.date}: ${Math.round(d.minutes)} min`}
             >
               <i />
@@ -43,7 +54,9 @@ export default function StatsPanel({ stats, onReset }) {
 
       {summary.categories.length > 0 && (
         <div>
-          <h2 className="section-kicker">Par point de grammaire</h2>
+          <h2 className="section-kicker">
+            {evening ? "Ce qui tient, ce qui glisse" : "Par point de grammaire"}
+          </h2>
           {summary.categories.map((row, i) => (
             <div key={row.id} className={`category-row${i % 2 ? " warm" : ""}`}>
               <span className="category-name">{row.label}</span>
@@ -62,7 +75,7 @@ export default function StatsPanel({ stats, onReset }) {
       )}
 
       {summary.recent.length > 0 && (
-        <div>
+        <div className="recent-block">
           <h2 className="section-kicker">Dernières séances</h2>
           {summary.recent.slice(0, 4).map((s) => {
             const acc = accuracyPct(s.utterances, s.corrections);

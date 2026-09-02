@@ -6,6 +6,14 @@
 <title>Pratique orale — French Speaking Practice</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<script>
+  try {
+    if (localStorage.getItem("frenchvoice-theme") === "soir") {
+      document.documentElement.dataset.theme = "soir";
+      document.documentElement.style.colorScheme = "dark";
+    }
+  } catch (e) {}
+</script>
 </head>
 <body>
 <div id="root"></div>
