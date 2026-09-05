@@ -15,7 +15,7 @@ export default function ScenarioPicker({ onSelect, disabled, error, stats, onRes
   const [focus, setFocus] = useState("");
   const [pickedWords, setPickedWords] = useState([]);
   const [resume] = useState(loadResume);
-  const [scenesOpen, setScenesOpen] = useState(() => !loadResume());
+  const [scenesOpen, setScenesOpen] = useState(true);
 
   useEffect(() => {
     fetch("/api/scenarios")
