@@ -4,7 +4,7 @@ import { formatClock } from "../lib/stats.js";
 import { categoryLabel } from "../../lib/feedback.js";
 import TranscriptPanel from "./TranscriptPanel.jsx";
 import CorrectionsPanel from "./CorrectionsPanel.jsx";
-import Margot from "./Margot.jsx";
+import Freddy from "./Freddy.jsx";
 import { useTheme } from "./ThemeToggle.jsx";
 
 function useElapsed(startedAt) {
@@ -59,7 +59,7 @@ export default function CallScreen({
     <section id="call-screen" className="call-screen talk-screen">
       <div className="call-topbar">
         <div className="call-identity">
-          <Margot size="sm" />
+          <Freddy size="sm" />
           <h2>{scenarioTitle}</h2>
           {mission ? (
             <div className="mission-chip">

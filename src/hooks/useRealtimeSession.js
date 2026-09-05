@@ -1,6 +1,7 @@
 import { useCallback, useRef, useState } from "react";
 import { startPcmCapture, createPcmPlayer } from "../lib/pcmAudio.js";
 import { normalizeFeedback, collectVocab } from "../../lib/feedback.js";
+import { createCostMeter, printCostReport } from "../lib/costMeter.js";
 
 const STATUS_LABELS = {
   idle: "Idle",
@@ -40,6 +41,7 @@ export function useRealtimeSession() {
     turns: [],
     transcript: [],
   });
+  const pendingChecksRef = useRef(new Set());
   const talkingRef = useRef(false);
   const handsFreeRef = useRef(true);
   const [handsFree, setHandsFreeState] = useState(() => {
@@ -95,6 +97,13 @@ export function useRealtimeSession() {
         });
         const data = await res.json();
         if (statsRef.current.startedAt !== requestStartedAt) return;
+
+        if (data.usage) {
+          sessionRef.current?.costMeter?.recordCorrection(
+            data.usage.inTokens,
+            data.usage.outTokens
+          );
+        }
 
         let feedback = data.feedback;
         if (!feedback && data.correction) {
@@ -201,6 +210,15 @@ export function useRealtimeSession() {
         ]);
       }
 
+      if (session?.costMeter) {
+        const costReport = session.costMeter.report();
+        printCostReport(costReport);
+        if (typeof window !== "undefined") {
+          window.__lastCostReport = costReport;
+          window.__costReports = [...(window.__costReports || []), costReport];
+        }
+      }
+
       sessionRef.current = session || { closed: true };
       setStatus("ended");
       const recap = snapshotRecap();
@@ -259,18 +277,27 @@ export function useRealtimeSession() {
         return false;
       }
 
+      const player = createPcmPlayer();
+      try {
+        await player.resume();
+      } catch {
+        /* Autoplay lock — playBase64Pcm16 will try again. */
+      }
+
       const session = {
         closed: false,
+        costMeter: createCostMeter(),
         ws: null,
         micStream,
         capturer: null,
-        player: null,
+        player,
         userTurnId: null,
         partnerTurnId: null,
         userText: "",
         partnerText: "",
         nextYou: 0,
         nextPartner: 0,
+        allowMic: false,
         shouldSend: () => handsFreeRef.current || talkingRef.current,
       };
       sessionRef.current = session;
@@ -312,9 +339,6 @@ export function useRealtimeSession() {
         statsRef.current.daily = !!options.daily;
         statsRef.current.startedAt = started;
 
-        const player = createPcmPlayer();
-        session.player = player;
-
         const ws = new WebSocket(
           `${LIVE_WS_PATH}?access_token=${encodeURIComponent(ephemeralKey)}`
         );
@@ -324,6 +348,25 @@ export function useRealtimeSession() {
           if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(payload));
         };
         session.sendJson = sendJson;
+
+        let settled = false;
+        const ready = new Promise((resolve, reject) => {
+          const finish = (ok, err) => {
+            if (settled) return;
+            settled = true;
+            clearTimeout(timer);
+            session.markReady = null;
+            session.markFailed = null;
+            if (ok) resolve();
+            else reject(err);
+          };
+          const timer = setTimeout(() => {
+            finish(false, new Error("La session vocale n'a pas démarré."));
+          }, 15000);
+          session.markReady = () => finish(true);
+          session.markFailed = (err) =>
+            finish(false, err instanceof Error ? err : new Error(String(err)));
+        });
 
         ws.addEventListener("open", () => {
           sendJson({
@@ -377,13 +420,18 @@ export function useRealtimeSession() {
 
         if (session.closed) return false;
 
-        ws.addEventListener("close", () => {
-          if (!session.closed) {
-            session.closed = true;
-            setStatus("ended");
+        ws.addEventListener("close", (ev) => {
+          if (session.closed) return;
+          session.closed = true;
+          const reason = ev?.reason || "connexion fermée";
+          if (session.markFailed) {
+            session.markFailed(new Error(`La voix s'est coupée (${reason}).`));
           }
+          setStatus("ended");
         });
 
+        await ready;
+        if (session.closed) return false;
         return true;
       } catch (err) {
         console.error(err);
@@ -400,42 +448,20 @@ export function useRealtimeSession() {
     const session = sessionRef.current;
     if (!session || session.closed || session.wrapSent || !session.sendJson) return;
     session.wrapSent = true;
-    session.sendJson({
-      clientContent: {
-        turns: [
-          {
-            role: "user",
-            parts: [
-              {
-                text: "The practice window is ending. Start wrapping up the conversation warmly in French. Do not mention a timer or English.",
-              },
-            ],
-          },
-        ],
-        turnComplete: true,
-      },
-    });
+    sendRealtimeText(
+      session.sendJson,
+      "The practice window is ending. Start wrapping up the conversation warmly in French. Do not mention a timer or English."
+    );
   }, []);
 
   const promptRepeat = useCallback((phrase) => {
     const session = sessionRef.current;
     const text = typeof phrase === "string" ? phrase.trim() : "";
     if (!session || session.closed || !session.sendJson || !text) return;
-    session.sendJson({
-      clientContent: {
-        turns: [
-          {
-            role: "user",
-            parts: [
-              {
-                text: `The learner will now repeat this phrase: "${text}". Listen, give a brief encouraging acknowledgment in French, then continue the scenario. Do not switch to English.`,
-              },
-            ],
-          },
-        ],
-        turnComplete: true,
-      },
-    });
+    sendRealtimeText(
+      session.sendJson,
+      `The learner will now repeat this phrase: "${text}". Listen, give a brief encouraging acknowledgment in French, then continue the scenario. Do not switch to English.`
+    );
   }, []);
 
   return {
@@ -461,6 +487,18 @@ export function useRealtimeSession() {
   };
 }
 
+function sendRealtimeText(sendJson, text) {
+  sendJson({ realtimeInput: { text } });
+}
+
+function pick(obj, ...keys) {
+  if (!obj) return undefined;
+  for (const key of keys) {
+    if (obj[key] != null) return obj[key];
+  }
+  return undefined;
+}
+
 function handleLiveMessage(
   message,
   session,
@@ -471,32 +509,48 @@ function handleLiveMessage(
   statsRef,
   setLiveStats
 ) {
-  if (message.setupComplete) {
+  const usage = pick(message, "usageMetadata", "usage_metadata");
+  if (usage) {
+    session.costMeter?.recordUsage(usage);
+  }
+
+  if (pick(message, "setupComplete", "setup_complete")) {
     startMicAndGreeting(session, sendJson, setStatus).catch((err) => {
       console.error(err);
+      session.markFailed?.(err);
     });
     return;
   }
 
-  const content = message.serverContent;
+  const content = pick(message, "serverContent", "server_content");
   if (!content) {
-    if (message.error) console.error("Gemini Live error:", message.error);
+    const err = pick(message, "error");
+    if (err) {
+      console.error("Gemini Live error:", err);
+      const text = err.message || err.status || JSON.stringify(err);
+      session.markFailed?.(new Error(text));
+    }
     return;
   }
 
-  const parts = content.modelTurn && content.modelTurn.parts;
+  const modelTurn = pick(content, "modelTurn", "model_turn");
+  const parts = modelTurn && modelTurn.parts;
   if (parts) {
     for (const part of parts) {
-      if (part.inlineData && part.inlineData.data && session.player) {
+      const inline = pick(part, "inlineData", "inline_data");
+      const data = inline && pick(inline, "data");
+      if (data && session.player) {
+        session.allowMic = true;
         finishUserTurn(session, statsRef, setLiveStats, requestCorrectionCheck);
-        session.player.playBase64Pcm16(part.inlineData.data);
+        session.player.playBase64Pcm16(data);
         setStatus("speaking");
       }
     }
   }
 
-  if (content.inputTranscription) {
-    const chunk = content.inputTranscription.text || "";
+  const inputTranscription = pick(content, "inputTranscription", "input_transcription");
+  if (inputTranscription) {
+    const chunk = inputTranscription.text || "";
     if (chunk) {
       if (!session.userTurnId) {
         session.userTurnId = `you-${session.nextYou++}`;
@@ -506,14 +560,16 @@ function handleLiveMessage(
       upsertTranscriptItem(session.userTurnId, "you", session.userText);
       setStatus("listening");
     }
-    if (content.inputTranscription.finished) {
+    if (inputTranscription.finished) {
       finishUserTurn(session, statsRef, setLiveStats, requestCorrectionCheck);
     }
   }
 
-  if (content.outputTranscription && content.outputTranscription.text) {
+  const outputTranscription = pick(content, "outputTranscription", "output_transcription");
+  if (outputTranscription && outputTranscription.text) {
+    session.allowMic = true;
     finishUserTurn(session, statsRef, setLiveStats, requestCorrectionCheck);
-    const chunk = content.outputTranscription.text;
+    const chunk = outputTranscription.text;
     if (!session.partnerTurnId) {
       session.partnerTurnId = `partner-${session.nextPartner++}`;
       session.partnerText = "";
@@ -528,7 +584,7 @@ function handleLiveMessage(
     setStatus("listening");
   }
 
-  if (content.turnComplete || content.generationComplete) {
+  if (pick(content, "turnComplete", "turn_complete", "generationComplete", "generation_complete")) {
     finishUserTurn(session, statsRef, setLiveStats, requestCorrectionCheck);
     session.partnerTurnId = null;
     session.partnerText = "";
@@ -555,29 +611,35 @@ function finishUserTurn(session, statsRef, setLiveStats, requestCorrectionCheck)
 }
 
 async function startMicAndGreeting(session, sendJson, setStatus) {
-  if (session.closed || session.capturer) return;
-  session.capturer = await startPcmCapture(session.micStream, (b64) => {
-    if (session.closed) return;
-    if (!session.shouldSend || !session.shouldSend()) return;
-    sendJson({
-      realtimeInput: {
-        audio: {
-          mimeType: "audio/pcm;rate=16000",
-          data: b64,
-        },
-      },
-    });
-  });
-  sendJson({
-    clientContent: {
-      turns: [
-        {
-          role: "user",
-          parts: [{ text: "The learner just joined. Greet them now and begin the scenario." }],
-        },
-      ],
-      turnComplete: true,
-    },
-  });
+  if (session.closed || session.capturer) {
+    session.markReady?.();
+    return;
+  }
+  sendRealtimeText(
+    sendJson,
+    "The learner just joined. Speak first now: greet them in French and begin the scenario. Do not wait for them to talk."
+  );
   setStatus("listening");
+  session.markReady?.();
+
+  try {
+    session.capturer = await startPcmCapture(session.micStream, (b64) => {
+      if (session.closed) return;
+      if (!session.allowMic) return;
+      if (!session.shouldSend || !session.shouldSend()) return;
+      sendJson({
+        realtimeInput: {
+          audio: {
+            mimeType: "audio/pcm;rate=16000",
+            data: b64,
+          },
+        },
+      });
+    });
+  } catch (err) {
+    console.error(err);
+  }
+  window.setTimeout(() => {
+    session.allowMic = true;
+  }, 1200);
 }

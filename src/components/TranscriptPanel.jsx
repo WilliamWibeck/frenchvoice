@@ -72,7 +72,7 @@ export default function TranscriptPanel({ transcript, speaking, onRepeat }) {
       {speaking && (
         <div className="bubble-row partner">
           <span className="partner-dot live" />
-          <div className="typing" aria-label="Margot is speaking">
+          <div className="typing" aria-label="Freddy parle">
             <i />
             <i />
             <i />

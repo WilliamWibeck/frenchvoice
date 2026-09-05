@@ -27,14 +27,14 @@ export function streakHeadline(n) {
 }
 
 export function streakAside(n) {
-  if (!n) return "Une petite séance et Margot commence le compte.";
+  if (!n) return "Une petite séance et Freddy commence le compte.";
   const untilToast = 7 - n;
   if (untilToast > 0) {
     const word = FR_COUNT[untilToast] || String(untilToast);
     const capped = word.charAt(0).toUpperCase() + word.slice(1);
-    return `${capped} de plus et Margot sort le champagne.`;
+    return `${capped} de plus et Freddy sort le champagne.`;
   }
-  return "Margot est fière — tu tiens le rythme.";
+  return "Freddy est fier — tu tiens le rythme.";
 }
 
 export function streakHeadlineSoir(n) {

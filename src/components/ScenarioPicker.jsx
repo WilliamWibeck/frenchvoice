@@ -5,7 +5,7 @@ import { pickWeakFocus } from "../lib/weakpoints.js";
 import { localDateKey, recentVocab, summarizeStats } from "../lib/stats.js";
 import { loadResume } from "../lib/resume.js";
 import StatsPanel from "./StatsPanel.jsx";
-import Margot from "./Margot.jsx";
+import Freddy from "./Freddy.jsx";
 import { useTheme } from "./ThemeToggle.jsx";
 
 export default function ScenarioPicker({ onSelect, disabled, error, stats, onResetStats }) {
@@ -13,8 +13,9 @@ export default function ScenarioPicker({ onSelect, disabled, error, stats, onRes
   const [loadError, setLoadError] = useState(null);
   const [topic, setTopic] = useState("");
   const [focus, setFocus] = useState("");
+  const [pickedWords, setPickedWords] = useState([]);
   const [resume] = useState(loadResume);
-  const [scenesOpen, setScenesOpen] = useState(() => !loadResume());
+  const [scenesOpen, setScenesOpen] = useState(true);
 
   useEffect(() => {
     fetch("/api/scenarios")
@@ -40,6 +41,16 @@ export default function ScenarioPicker({ onSelect, disabled, error, stats, onRes
   const usedCount = words.filter((w) => usedToday.has(w.fr.toLowerCase())).length;
   const surprise = scenarios.find((s) => s.id === "surprise");
   const listed = scenarios.filter((s) => s.id !== "surprise");
+  const vocabTargets = pickedWords.length ? pickedWords : undefined;
+
+  function extras(more = {}) {
+    return {
+      topic: customTopic,
+      focus,
+      vocabTargets,
+      ...more,
+    };
+  }
 
   function startDaily() {
     if (disabled) return;
@@ -47,22 +58,30 @@ export default function ScenarioPicker({ onSelect, disabled, error, stats, onRes
     const plan = pickDailyPlan();
     const scenarioId = customTopic ? "free" : plan.scenarioId;
     const match = scenarios.find((s) => s.id === scenarioId);
-    onSelect(scenarioId, customTopic || (match ? match.title : "Daily session"), {
-      topic: customTopic,
-      focus: focus || pickWeakFocus(stats)?.id || plan.focus,
+    onSelect(scenarioId, customTopic || (match ? match.title : "Daily session"), extras({
+      focus: focus || weak?.id || plan.focus,
       daily: true,
-    });
+    }));
   }
 
   function continueScene(fresh) {
     if (!resume || disabled) return;
     const id = resume.scenarioId === "surprise" ? "free" : resume.scenarioId;
-    onSelect(id, resume.title, {
-      topic: resume.topic || "",
+    onSelect(id, resume.title, extras({
+      topic: resume.topic || customTopic,
       focus: resume.focus || focus,
       daily: !!resume.daily,
       resume: !fresh,
-    });
+    }));
+  }
+
+  function toggleWord(word) {
+    const key = word.fr.toLowerCase();
+    setPickedWords((cur) =>
+      cur.some((item) => item.fr.toLowerCase() === key)
+        ? cur.filter((item) => item.fr.toLowerCase() !== key)
+        : [...cur, word]
+    );
   }
 
   return (
@@ -84,7 +103,7 @@ export default function ScenarioPicker({ onSelect, disabled, error, stats, onRes
       {resume ? (
         <div className="continue-card">
           <div className="continue-hero">
-            <Margot size="sm" />
+            <Freddy size="sm" />
             <div>
               <div className="continue-kicker">On reprend</div>
               <div className="continue-title">{resume.title}</div>
@@ -110,14 +129,14 @@ export default function ScenarioPicker({ onSelect, disabled, error, stats, onRes
           </div>
         </div>
       ) : (
-        <div className="margot-hello">
+        <div className="freddy-hello">
           <span className="hello-glow" aria-hidden="true" />
-          <Margot size="md" />
+          <Freddy size="md" />
           <p className="speech">
             <span className="speech-title">
               {evening ? "Bonsoir ! Tu as cinq minutes ?" : "Salut ! On parle de quoi aujourd'hui ?"}
             </span>
-            {evening && <span className="speech-sub">Margot a une nouvelle scène pour toi.</span>}
+            {evening && <span className="speech-sub">Freddy a une nouvelle scène pour toi.</span>}
           </p>
         </div>
       )}
@@ -127,7 +146,7 @@ export default function ScenarioPicker({ onSelect, disabled, error, stats, onRes
           type="button"
           className="surprise-banner"
           disabled={disabled}
-          onClick={() => onSelect("surprise", surprise.title, { topic: customTopic, focus })}
+          onClick={() => onSelect("surprise", surprise.title, extras())}
         >
           <span className="surprise-blob" aria-hidden="true" />
           <span className="scenario-index">?</span>
@@ -149,13 +168,15 @@ export default function ScenarioPicker({ onSelect, disabled, error, stats, onRes
           <div className="word-bank-row">
             {words.map((w) => {
               const used = usedToday.has(w.fr.toLowerCase());
+              const picked = pickedWords.some((item) => item.fr.toLowerCase() === w.fr.toLowerCase());
               return (
                 <button
                   key={w.fr}
                   type="button"
-                  className={`word-chip${used ? " used" : ""}`}
+                  className={`word-chip${used ? " used" : ""}${picked ? " picked" : ""}`}
                   disabled={disabled}
-                  onClick={() => onSelect("free", "Discussion libre", { vocabTargets: [w] })}
+                  aria-pressed={picked}
+                  onClick={() => toggleWord(w)}
                 >
                   {used ? <span className="word-tick">✓</span> : null}
                   {w.fr}
@@ -163,8 +184,52 @@ export default function ScenarioPicker({ onSelect, disabled, error, stats, onRes
               );
             })}
           </div>
+          {pickedWords.length > 0 && (
+            <button
+              type="button"
+              className="text-btn"
+              disabled={disabled}
+              onClick={() => onSelect("free", "Discussion libre", extras({ vocabTargets: pickedWords }))}
+            >
+              Parler avec ces mots
+            </button>
+          )}
         </div>
       )}
+
+      <div className="word-bank focus-bank">
+        <div className="word-bank-top">
+          <span className="section-kicker">Un point à travailler</span>
+          {focus ? (
+            <button type="button" className="text-btn" onClick={() => setFocus("")}>
+              Laisser faire
+            </button>
+          ) : (
+            <span className="word-bank-count">optionnel</span>
+          )}
+        </div>
+        {weak && (
+          <p className="focus-hint">
+            {focus === weak.id
+              ? `Freddy insistera sur le ${weak.label.toLowerCase()}.`
+              : `Freddy verrait bien le ${weak.label.toLowerCase()}.`}
+          </p>
+        )}
+        <div className="word-bank-row" role="group" aria-label="Point de grammaire">
+          {FOCUS_OPTIONS.map((f) => (
+            <button
+              key={f.id}
+              type="button"
+              className={`word-chip${focus === f.id ? " picked" : ""}${weak?.id === f.id && focus !== f.id ? " suggested" : ""}`}
+              disabled={disabled}
+              aria-pressed={focus === f.id}
+              onClick={() => setFocus((cur) => (cur === f.id ? "" : f.id))}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+      </div>
 
       <button
         type="button"
@@ -179,6 +244,23 @@ export default function ScenarioPicker({ onSelect, disabled, error, stats, onRes
 
       {scenesOpen && (
         <div className="scenes-panel">
+          <div className="scenario-grid">
+            {listed.map((s, i) => (
+              <button
+                key={s.id}
+                className={`scenario-card${i % 2 ? " sage" : ""}`}
+                disabled={disabled}
+                onClick={() => onSelect(s.id, s.title, extras())}
+              >
+                <span className="scenario-blob" />
+                <span className="scenario-index">{String(i + 1).padStart(2, "0")}</span>
+                <span className="scenario-copy">
+                  <span className="scenario-title">{s.title}</span>
+                  {s.blurb && <span className="scenario-blurb">{s.blurb}</span>}
+                </span>
+              </button>
+            ))}
+          </div>
           <form
             className="daily-start"
             onSubmit={(e) => {
@@ -187,12 +269,12 @@ export default function ScenarioPicker({ onSelect, disabled, error, stats, onRes
             }}
           >
             <label className="topic-field">
-              <span>I want to talk about…</span>
+              <span>Je voudrais parler de…</span>
               <input
                 className="input"
                 type="text"
                 maxLength={200}
-                placeholder="Weekend plans, my job, a trip…"
+                placeholder="le week-end, mon travail, un voyage…"
                 value={topic}
                 disabled={disabled}
                 onChange={(e) => setTopic(e.target.value)}
@@ -212,44 +294,6 @@ export default function ScenarioPicker({ onSelect, disabled, error, stats, onRes
               <span className="daily-arrow" aria-hidden="true">→</span>
             </button>
           </form>
-          {weak && (
-            <p className="weak-banner">
-              Margot suggère : {weak.label} ({weak.accuracy}% sur {weak.attempts} essais).
-              <button type="button" className="text-btn inline" onClick={() => setFocus(weak.id)}>
-                Utiliser
-              </button>
-            </p>
-          )}
-          <div className="focus-row" role="group" aria-label="Grammar focus">
-            {FOCUS_OPTIONS.map((f) => (
-              <button
-                key={f.id}
-                type="button"
-                className={`focus-chip${focus === f.id ? " selected" : ""}`}
-                disabled={disabled}
-                onClick={() => setFocus((cur) => (cur === f.id ? "" : f.id))}
-              >
-                {f.label}
-              </button>
-            ))}
-          </div>
-          <div className="scenario-grid">
-            {listed.map((s, i) => (
-              <button
-                key={s.id}
-                className={`scenario-card${i % 2 ? " sage" : ""}`}
-                disabled={disabled}
-                onClick={() => onSelect(s.id, s.title, { topic: topic.trim(), focus })}
-              >
-                <span className="scenario-blob" />
-                <span className="scenario-index">{String(i + 1).padStart(2, "0")}</span>
-                <span className="scenario-copy">
-                  <span className="scenario-title">{s.title}</span>
-                  {s.blurb && <span className="scenario-blurb">{s.blurb}</span>}
-                </span>
-              </button>
-            ))}
-          </div>
           <StatsPanel stats={stats} onReset={onResetStats} />
         </div>
       )}

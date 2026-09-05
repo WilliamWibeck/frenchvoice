@@ -59,7 +59,7 @@ export function createPcmPlayer() {
   const sources = new Set();
 
   async function playBase64Pcm16(b64) {
-    if (ctx.state === "suspended") await ctx.resume();
+    await resume();
     const int16 = base64ToInt16(b64);
     if (!int16.length) return;
     const float32 = new Float32Array(int16.length);
@@ -77,6 +77,10 @@ export function createPcmPlayer() {
     src.onended = () => sources.delete(src);
   }
 
+  async function resume() {
+    if (ctx.state === "suspended") await ctx.resume();
+  }
+
   function interrupt() {
     sources.forEach((s) => {
       try { s.stop(); } catch {}
@@ -90,7 +94,7 @@ export function createPcmPlayer() {
     try { await ctx.close(); } catch {}
   }
 
-  return { playBase64Pcm16, interrupt, destroy };
+  return { playBase64Pcm16, interrupt, destroy, resume };
 }
 
 export async function startPcmCapture(stream, onPcm16Base64) {
