@@ -40,6 +40,7 @@ export function useRealtimeSession() {
     turns: [],
     transcript: [],
   });
+  const pendingChecksRef = useRef(new Set());
   const talkingRef = useRef(false);
   const handsFreeRef = useRef(true);
   const [handsFree, setHandsFreeState] = useState(() => {
