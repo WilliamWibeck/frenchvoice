@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { FOCUS_OPTIONS } from "../../lib/feedback.js";
 import { pickDailyPlan } from "../lib/daily.js";
 import { pickWeakFocus } from "../lib/weakpoints.js";
-import { localDateKey, recentVocab, summarizeStats } from "../lib/stats.js";
+import { localDateKey, recentVocab, summarizeStats, formatMinutes, formatSessionDate, reviewableSessions } from "../lib/stats.js";
 import { loadResume } from "../lib/resume.js";
 import { pickRotatingScenes } from "../lib/rotation.js";
 import {
@@ -77,7 +77,21 @@ function SceneCard({ scene, index, starred, disabled, onPlay, onStar, onRemove }
   );
 }
 
-export default function ScenarioPicker({ onSelect, disabled, error, stats, onResetStats }) {
+function Accordion({ title, count, open, onToggle, children }) {
+  return (
+    <>
+      <button type="button" className="scenes-toggle" onClick={onToggle} aria-expanded={open}>
+        <span>
+          {title} {count != null && <span className="scenes-count">({count})</span>}
+        </span>
+        <span className="scenes-caret">{open ? "▴" : "▾"}</span>
+      </button>
+      {open && <div className="scenes-panel">{children}</div>}
+    </>
+  );
+}
+
+export default function ScenarioPicker({ onSelect, disabled, error, stats, onResetStats, onOpenSession }) {
   const [scenarios, setScenarios] = useState([]);
   const [loadError, setLoadError] = useState(null);
   const [topic, setTopic] = useState("");
@@ -85,6 +99,8 @@ export default function ScenarioPicker({ onSelect, disabled, error, stats, onRes
   const [pickedWords, setPickedWords] = useState([]);
   const [resume] = useState(loadResume);
   const [scenesOpen, setScenesOpen] = useState(true);
+  const [savedOpen, setSavedOpen] = useState(true);
+  const [convosOpen, setConvosOpen] = useState(true);
   const [saved, setSaved] = useState(loadSavedScenes);
   const [sceneDraft, setSceneDraft] = useState("");
 
@@ -113,10 +129,9 @@ export default function ScenarioPicker({ onSelect, disabled, error, stats, onRes
   const surprise = scenarios.find((s) => s.id === "surprise");
   const catalog = scenarios.filter((s) => s.id !== "surprise");
   const rotating = pickRotatingScenes(catalog);
-  const todayIds = new Set(rotating.map((s) => s.id));
   const kept = saved.starred
     .map((id) => catalog.find((s) => s.id === id))
-    .filter((s) => s && !todayIds.has(s.id));
+    .filter(Boolean);
   const mine = [
     ...kept,
     ...saved.custom.map((s) => ({
@@ -124,6 +139,7 @@ export default function ScenarioPicker({ onSelect, disabled, error, stats, onRes
       blurb: s.prompt.length > 72 ? `${s.prompt.slice(0, 71)}…` : s.prompt,
     })),
   ];
+  const conversations = reviewableSessions(stats);
   const vocabTargets = pickedWords.length ? pickedWords : undefined;
 
   function extras(more = {}) {
@@ -345,19 +361,70 @@ export default function ScenarioPicker({ onSelect, disabled, error, stats, onRes
         </div>
       </div>
 
-      <button
-        type="button"
-        className="scenes-toggle"
-        onClick={() => setScenesOpen((open) => !open)}
-      >
-        <span>
-          Les scènes <span className="scenes-count">({rotating.length || catalog.length})</span>
-        </span>
-        <span className="scenes-caret">{scenesOpen ? "▴" : "▾"}</span>
-      </button>
+      {mine.length > 0 && (
+        <Accordion
+          title="Mes scènes"
+          count={mine.length}
+          open={savedOpen}
+          onToggle={() => setSavedOpen((open) => !open)}
+        >
+          <div className="scenario-grid">
+            {mine.map((s, i) => (
+              <SceneCard
+                key={s.id}
+                scene={s}
+                index={i}
+                starred={isStarred(s.id, saved)}
+                disabled={disabled}
+                onPlay={() => playScene(s)}
+                onStar={() => handleStar(s.id)}
+                onRemove={isCustomSceneId(s.id) ? () => setSaved(removeCustomScene(s.id)) : undefined}
+              />
+            ))}
+          </div>
+        </Accordion>
+      )}
 
-      {scenesOpen && (
-        <div className="scenes-panel">
+      {conversations.length > 0 && onOpenSession && (
+        <Accordion
+          title="Conversations"
+          count={conversations.length}
+          open={convosOpen}
+          onToggle={() => setConvosOpen((open) => !open)}
+        >
+          <div className="convo-list">
+            {conversations.map((s) => {
+              const n = s.corrections || 0;
+              const when = formatSessionDate(s.startedAt);
+              return (
+                <button
+                  key={s.id}
+                  type="button"
+                  className="recent-item convo-item"
+                  onClick={() => onOpenSession(s)}
+                >
+                  <span className="convo-copy">
+                    <strong>{s.scenarioTitle || "Conversation"}</strong>
+                    <span className="convo-sub">
+                      {when}
+                      {when ? " · " : ""}
+                      {n === 1 ? "1 à revoir" : `${n} à revoir`}
+                    </span>
+                  </span>
+                  <span className="recent-meta">{formatMinutes(s.durationMs)}</span>
+                </button>
+              );
+            })}
+          </div>
+        </Accordion>
+      )}
+
+      <Accordion
+        title="Les scènes"
+        count={rotating.length || catalog.length}
+        open={scenesOpen}
+        onToggle={() => setScenesOpen((open) => !open)}
+      >
           <div className="section-kicker scenes-kicker">Aujourd'hui</div>
           <div className="scenario-grid">
             {rotating.map((s, i) => (
@@ -372,26 +439,6 @@ export default function ScenarioPicker({ onSelect, disabled, error, stats, onRes
               />
             ))}
           </div>
-
-          {mine.length > 0 && (
-            <>
-              <div className="section-kicker scenes-kicker">Mes scènes</div>
-              <div className="scenario-grid">
-                {mine.map((s, i) => (
-                  <SceneCard
-                    key={s.id}
-                    scene={s}
-                    index={i}
-                    starred={isStarred(s.id, saved)}
-                    disabled={disabled}
-                    onPlay={() => playScene(s)}
-                    onStar={() => handleStar(s.id)}
-                    onRemove={isCustomSceneId(s.id) ? () => setSaved(removeCustomScene(s.id)) : undefined}
-                  />
-                ))}
-              </div>
-            </>
-          )}
 
           <form className="scene-compose" onSubmit={handleCreateScene}>
             <label className="topic-field">
@@ -449,8 +496,7 @@ export default function ScenarioPicker({ onSelect, disabled, error, stats, onRes
             </button>
           </form>
           <StatsPanel stats={stats} onReset={onResetStats} />
-        </div>
-      )}
+      </Accordion>
 
       {(error || loadError) && <p className="error-banner">{error || loadError}</p>}
     </section>

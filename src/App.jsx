@@ -2,6 +2,7 @@ import { useState } from "react";
 import ScenarioPicker from "./components/ScenarioPicker.jsx";
 import CallScreen from "./components/CallScreen.jsx";
 import SessionRecap from "./components/SessionRecap.jsx";
+import ConversationReview from "./components/ConversationReview.jsx";
 import ThemeToggle from "./components/ThemeToggle.jsx";
 import { useRealtimeSession } from "./hooks/useRealtimeSession.js";
 import { saveResume } from "./lib/resume.js";
@@ -13,10 +14,12 @@ export default function App() {
   const [stats, setStats] = useState(loadStats);
   const [recap, setRecap] = useState(null);
   const [recapRecorded, setRecapRecorded] = useState(false);
+  const [review, setReview] = useState(null);
   const session = useRealtimeSession();
 
   async function handleSelect(scenarioId, title, options = {}) {
     setRecap(null);
+    setReview(null);
     setConnecting(true);
     const ok = await session.startCall(scenarioId, title, options);
     setConnecting(false);
@@ -80,6 +83,10 @@ export default function App() {
           recap={recap}
           recorded={recapRecorded}
           onDone={() => setRecap(null)}
+          onReview={() => {
+            setReview(recap);
+            setRecap(null);
+          }}
           onAgain={() =>
             handleSelect(recap.scenarioId, recap.scenarioTitle, {
               topic: recap.topic || "",
@@ -94,6 +101,8 @@ export default function App() {
             handleSelect("free", "Discussion libre", { vocabTargets: words });
           }}
         />
+      ) : review ? (
+        <ConversationReview session={review} onDone={() => setReview(null)} />
       ) : (
         <ScenarioPicker
           onSelect={handleSelect}
@@ -101,6 +110,7 @@ export default function App() {
           error={session.error}
           stats={stats}
           onResetStats={handleResetStats}
+          onOpenSession={setReview}
         />
       )}
     </div>

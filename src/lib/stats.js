@@ -40,6 +40,37 @@ export function localDateKey(ts) {
   return `${y}-${m}-${day}`;
 }
 
+export function formatSessionDate(ts) {
+  if (!ts) return "";
+  try {
+    return new Date(ts).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+  } catch {
+    return "";
+  }
+}
+
+export function hydrateTranscript(session) {
+  const feedback = session?.feedback || [];
+  const byItem = new Map();
+  for (const fb of feedback) {
+    if (fb?.itemId) byItem.set(fb.itemId, fb);
+  }
+  return (session?.transcript || [])
+    .filter((m) => m && m.text)
+    .map((m) => ({
+      ...m,
+      feedback: m.feedback || byItem.get(m.id) || null,
+    }));
+}
+
+export function reviewableSessions(stats) {
+  return (stats?.sessions || []).filter((s) => {
+    const hasTalk = (s.transcript || []).some((m) => m?.text);
+    const hasNotes = (s.feedback || []).length > 0;
+    return hasTalk || hasNotes;
+  });
+}
+
 export function formatClock(ms) {
   const total = Math.max(0, Math.floor(ms / 1000));
   const m = Math.floor(total / 60);

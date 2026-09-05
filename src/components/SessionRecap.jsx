@@ -4,12 +4,13 @@ import { recapHeadline } from "../lib/copy.js";
 import Freddy from "./Freddy.jsx";
 import { useTheme } from "./ThemeToggle.jsx";
 
-export default function SessionRecap({ recap, recorded, onDone, onAgain, onPracticeVocab }) {
+export default function SessionRecap({ recap, recorded, onDone, onAgain, onPracticeVocab, onReview }) {
   const takeaways = pickTakeaways(recap.feedback);
   const keep = takeaways.correction || takeaways.tip;
   const { theme } = useTheme();
   const evening = theme === "soir";
   const frozen = (recap.transcript || []).filter((m) => m.text);
+  const canReview = frozen.length > 0 || (recap.feedback || []).length > 0;
   const kicker = evening
     ? `Séance terminée · ${formatClock(recap.durationMs)}`
     : recap.daily
@@ -112,7 +113,12 @@ export default function SessionRecap({ recap, recorded, onDone, onAgain, onPract
               {evening ? "Rejouer la scène" : "Encore une"}
             </button>
           )}
-          <button className="btn-ghost-lg" type="button" onClick={onDone}>
+          {onReview && canReview && (
+            <button className="btn-ghost-lg" type="button" onClick={onReview}>
+              Relire
+            </button>
+          )}
+          <button className={onReview && canReview ? "text-btn" : "btn-ghost-lg"} type="button" onClick={onDone}>
             {evening ? "Plus tard" : "Fermer"}
           </button>
         </div>

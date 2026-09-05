@@ -1,4 +1,4 @@
-import { accuracyPct, formatMinutes, localDateKey, summarizeStats } from "../lib/stats.js";
+import { localDateKey, summarizeStats } from "../lib/stats.js";
 import { frenchDayLabel, streakAside, streakHeadline, streakHeadlineSoir } from "../lib/copy.js";
 import { useTheme } from "./ThemeToggle.jsx";
 
@@ -71,24 +71,6 @@ export default function StatsPanel({ stats, onReset }) {
               </span>
             </div>
           ))}
-        </div>
-      )}
-
-      {summary.recent.length > 0 && (
-        <div className="recent-block">
-          <h2 className="section-kicker">Dernières séances</h2>
-          {summary.recent.slice(0, 4).map((s) => {
-            const acc = accuracyPct(s.utterances, s.corrections);
-            return (
-              <div key={s.id} className="recent-item">
-                <span>{s.scenarioTitle}</span>
-                <span className="recent-meta">
-                  {formatMinutes(s.durationMs)}
-                  {acc == null ? "" : ` · ${acc}%`}
-                </span>
-              </div>
-            );
-          })}
         </div>
       )}
 
