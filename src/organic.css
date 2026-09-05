@@ -61,6 +61,14 @@
   --shadow-sm: 0 1px 2px color-mix(in srgb, #2e2b25 14%, transparent);
   --shadow-md: 0 3px 10px color-mix(in srgb, #2e2b25 16%, transparent);
   --shadow-lg: 0 12px 32px color-mix(in srgb, #2e2b25 22%, transparent);
+
+  --ease-inout: cubic-bezier(0.45, 0, 0.55, 1);
+  --motion-duration: 280ms;
+  --motion-hover: var(--motion-duration) var(--ease-inout);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root { --motion-duration: 0.01ms; }
 }
 
 html[data-theme="soir"] {
@@ -135,6 +143,12 @@ figcaption {
   background: transparent; border: 1px solid transparent;
   padding: var(--space-2) calc(var(--space-3) * 1.2);
   border-radius: var(--radius-md);
+  transition:
+    background-color var(--motion-hover),
+    color var(--motion-hover),
+    border-color var(--motion-hover),
+    box-shadow var(--motion-hover),
+    opacity var(--motion-hover);
 }
 .btn svg { display: block; }
 .btn:disabled { opacity: 0.45; cursor: not-allowed; }
@@ -160,6 +174,7 @@ figcaption {
   font-size: 14px; color: var(--color-text); caret-color: var(--color-accent);
   background: var(--color-surface);
   border: 1px solid var(--color-divider); border-radius: var(--radius-md);
+  transition: border-color var(--motion-hover), background-color var(--motion-hover);
 }
 .input:hover { border-color: color-mix(in srgb, var(--color-text) 45%, transparent); }
 .input:focus-visible { border-color: var(--color-accent); outline-offset: 0; }

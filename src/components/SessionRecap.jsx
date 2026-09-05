@@ -1,7 +1,7 @@
 import { formatClock } from "../lib/stats.js";
 import { categoryLabel, pickTakeaways } from "../../lib/feedback.js";
 import { recapHeadline } from "../lib/copy.js";
-import Margot from "./Margot.jsx";
+import Freddy from "./Freddy.jsx";
 import { useTheme } from "./ThemeToggle.jsx";
 
 export default function SessionRecap({ recap, recorded, onDone, onAgain, onPracticeVocab }) {
@@ -33,7 +33,7 @@ export default function SessionRecap({ recap, recorded, onDone, onAgain, onPract
           <div className="recap-mascot">
             <span className="recap-spark a" />
             <span className="recap-spark b" />
-            <Margot size="lg" />
+            <Freddy size="lg" />
           </div>
           <div>
             <p className="recap-kicker">{kicker}</p>

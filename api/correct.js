@@ -53,7 +53,15 @@ export default async function handler(req, res) {
 
     const parsed = parseModelJson(result.text || "");
     const feedback = normalizeFeedback(parsed || {}, text);
-    res.status(200).json({ feedback });
+    // Surfaced so the client-side cost meter can price the correction line.
+    const u = result.usageMetadata || {};
+    res.status(200).json({
+      feedback,
+      usage: {
+        inTokens: u.promptTokenCount || 0,
+        outTokens: u.candidatesTokenCount || u.responseTokenCount || 0,
+      },
+    });
   } catch (err) {
     console.error("Gemini correction check failed:", err);
     res.status(500).json({

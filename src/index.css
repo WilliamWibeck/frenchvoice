@@ -6,10 +6,6 @@
   0%, 92%, 100% { transform: scaleY(1); }
   96% { transform: scaleY(0.1); }
 }
-@keyframes sway {
-  0%, 100% { transform: rotate(-7deg); }
-  50% { transform: rotate(-2deg); }
-}
 @keyframes float1 {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-9px); }
@@ -65,6 +61,33 @@ body {
   background: var(--color-bg);
 }
 
+.daily-btn,
+.scenario-card,
+.surprise-banner,
+.word-chip,
+.focus-chip,
+.text-btn,
+.scenes-toggle,
+.listen-end,
+.end-btn,
+.play-fix,
+.repeat-btn,
+.btn-primary-lg,
+.btn-ghost-lg,
+.theme-toggle button,
+.handsfree-hint {
+  transition:
+    transform var(--motion-hover),
+    background-color var(--motion-hover),
+    color var(--motion-hover),
+    border-color var(--motion-hover),
+    box-shadow var(--motion-hover),
+    opacity var(--motion-hover);
+}
+.talk-btn {
+  transition: background-color var(--motion-hover), transform var(--motion-hover);
+}
+
 .app-shell {
   max-width: 980px;
   margin: 0 auto;
@@ -81,87 +104,52 @@ body {
   margin: 0 auto;
 }
 
-/* ── Margot ── */
-.margot-wrap {
+/* ── Freddy ── */
+.freddy-wrap {
   position: relative;
   flex: none;
   width: 96px;
-  height: 92px;
+  height: 108px;
   animation: breathe 4.2s ease-in-out infinite;
 }
-.margot-wrap.sm { width: 46px; height: 44px; animation-duration: 4s; }
-.margot-wrap.lg { width: 120px; height: 112px; animation: float1 4.4s ease-in-out infinite; }
-.margot {
-  position: relative;
-  width: 96px;
-  height: 92px;
+.freddy-wrap.sm { width: 48px; height: 54px; animation-duration: 4s; }
+.freddy-wrap.lg { width: 112px; height: 126px; animation: float1 4.4s ease-in-out infinite; }
+.freddy {
+  --fur: #ffffff;
+  --fur-shade: #eadcc8;
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  filter: drop-shadow(0 3px 5px color-mix(in srgb, #2e2b25 22%, transparent));
 }
-.margot-wrap.sm .margot {
-  transform: scale(0.479);
-  transform-origin: top left;
+.freddy .fur { fill: var(--fur); }
+.freddy .fur-dim { fill: var(--fur-shade); }
+.freddy .ink,
+.freddy-eye,
+.freddy .pad { fill: var(--color-neutral-900); }
+.freddy .glint { fill: #fff; }
+.freddy .bow,
+.freddy .bow-knot { fill: var(--color-accent-500); }
+.freddy .blush { fill: var(--color-accent-300); opacity: 0.72; }
+.freddy .smile {
+  fill: none;
+  stroke: var(--color-neutral-900);
+  stroke-width: 1.8;
+  stroke-linecap: round;
 }
-.margot-wrap.lg .margot {
-  transform: scale(1.22);
-  transform-origin: top center;
+.freddy .curl {
+  fill: none;
+  stroke: var(--fur-shade);
+  stroke-width: 2.1;
+  stroke-linecap: round;
 }
-.margot-body {
-  position: absolute;
-  inset: 8px 0 0;
-  border-radius: 48% 48% 46% 46% / 52% 52% 48% 48%;
-  background: var(--color-accent-2-400);
-  box-shadow: inset 0 -8px 0 color-mix(in srgb, var(--color-text) 6%, transparent);
-}
-.margot-beret {
-  position: absolute;
-  top: 0;
-  left: 6px;
-  width: 84px;
-  height: 30px;
-  border-radius: 999px;
-  background: var(--color-accent-500);
-  transform-origin: 60% 100%;
-  animation: sway 5s ease-in-out infinite;
-}
-.margot-pom {
-  position: absolute;
-  top: -9px;
-  right: 16px;
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: var(--color-accent-600);
-}
-.margot-eye {
-  position: absolute;
-  top: 46px;
-  width: 11px;
-  height: 13px;
-  border-radius: 50%;
-  background: var(--color-accent-2-900);
+.freddy-eye {
+  transform-box: fill-box;
+  transform-origin: center;
   animation: blink 4.6s ease-in-out infinite;
 }
-.margot-eye.left { left: 26px; }
-.margot-eye.right { left: 56px; }
-.margot-smile {
-  position: absolute;
-  top: 64px;
-  left: 38px;
-  width: 20px;
-  height: 11px;
-  border-radius: 0 0 999px 999px;
-  background: var(--color-accent-800);
-}
-.margot-blush {
-  position: absolute;
-  top: 58px;
-  width: 14px;
-  height: 8px;
-  border-radius: 999px;
-  background: var(--color-accent-300);
-  opacity: 0.85;
-}
-.margot-blush.left { left: 12px; }
-.margot-blush.right { right: 12px; }
+.freddy-eye.delay { animation-delay: 0.08s; }
 
 /* ── Home ── */
 .picker-top {
@@ -194,7 +182,7 @@ body {
   animation: breathe 2.4s ease-in-out infinite;
 }
 
-.margot-hello {
+.freddy-hello {
   display: flex;
   gap: 14px;
   align-items: flex-end;
@@ -1360,13 +1348,9 @@ body {
   line-height: 1.15;
   margin: 0;
 }
-.recap-sheet .margot-wrap.lg {
-  width: 62px;
-  height: 58px;
-}
-.recap-sheet .margot-wrap.lg .margot {
-  transform: scale(0.564);
-  transform-origin: top left;
+.recap-sheet .freddy-wrap.lg {
+  width: 58px;
+  height: 66px;
 }
 .recap-sheet .recap-spark { display: none; }
 .recap-screen h2 {
@@ -1547,7 +1531,7 @@ html[data-theme="soir"] .call-live-meta,
 html[data-theme="soir"] .orig {
   color: var(--color-neutral-400);
 }
-html[data-theme="soir"] .margot-hello {
+html[data-theme="soir"] .freddy-hello {
   position: relative;
   overflow: hidden;
   background: var(--color-surface);
@@ -1589,6 +1573,13 @@ html[data-theme="soir"] .daily-btn:hover:not(:disabled) {
   background: var(--color-accent-300);
 }
 html[data-theme="soir"] .daily-bars { display: none; }
+html[data-theme="soir"] .continue-go .daily-bars,
+html[data-theme="soir"] .talk-btn .daily-bars {
+  display: flex;
+}
+html[data-theme="soir"] .continue-go .daily-bars i {
+  background: var(--color-bg);
+}
 html[data-theme="soir"] .daily-arrow { display: inline; font-size: 19px; }
 html[data-theme="soir"] .topic-field .input,
 html[data-theme="soir"] .topic-field input {
@@ -1790,13 +1781,13 @@ html[data-theme="soir"] .recap-hero {
   text-align: left;
 }
 html[data-theme="soir"] .recap-spark { display: none; }
-html[data-theme="soir"] .recap-mascot .margot-wrap.lg {
-  width: 74px;
-  height: 72px;
+html[data-theme="soir"] .freddy {
+  --fur: var(--color-neutral-100);
+  --fur-shade: var(--color-neutral-200);
 }
-html[data-theme="soir"] .recap-mascot .margot-wrap.lg .margot {
-  transform: scale(0.77);
-  transform-origin: top left;
+html[data-theme="soir"] .recap-mascot .freddy-wrap.lg {
+  width: 68px;
+  height: 76px;
 }
 html[data-theme="soir"] .recap-kicker { color: var(--color-accent-2); }
 html[data-theme="soir"] .recap-screen h2 { font-size: 24px; }

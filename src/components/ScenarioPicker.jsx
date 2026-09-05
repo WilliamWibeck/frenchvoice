@@ -5,7 +5,7 @@ import { pickWeakFocus } from "../lib/weakpoints.js";
 import { localDateKey, recentVocab, summarizeStats } from "../lib/stats.js";
 import { loadResume } from "../lib/resume.js";
 import StatsPanel from "./StatsPanel.jsx";
-import Margot from "./Margot.jsx";
+import Freddy from "./Freddy.jsx";
 import { useTheme } from "./ThemeToggle.jsx";
 
 export default function ScenarioPicker({ onSelect, disabled, error, stats, onResetStats }) {
@@ -103,7 +103,7 @@ export default function ScenarioPicker({ onSelect, disabled, error, stats, onRes
       {resume ? (
         <div className="continue-card">
           <div className="continue-hero">
-            <Margot size="sm" />
+            <Freddy size="sm" />
             <div>
               <div className="continue-kicker">On reprend</div>
               <div className="continue-title">{resume.title}</div>
@@ -129,14 +129,14 @@ export default function ScenarioPicker({ onSelect, disabled, error, stats, onRes
           </div>
         </div>
       ) : (
-        <div className="margot-hello">
+        <div className="freddy-hello">
           <span className="hello-glow" aria-hidden="true" />
-          <Margot size="md" />
+          <Freddy size="md" />
           <p className="speech">
             <span className="speech-title">
               {evening ? "Bonsoir ! Tu as cinq minutes ?" : "Salut ! On parle de quoi aujourd'hui ?"}
             </span>
-            {evening && <span className="speech-sub">Margot a une nouvelle scène pour toi.</span>}
+            {evening && <span className="speech-sub">Freddy a une nouvelle scène pour toi.</span>}
           </p>
         </div>
       )}
@@ -211,8 +211,8 @@ export default function ScenarioPicker({ onSelect, disabled, error, stats, onRes
         {weak && (
           <p className="focus-hint">
             {focus === weak.id
-              ? `Margot insistera sur le ${weak.label.toLowerCase()}.`
-              : `Margot verrait bien le ${weak.label.toLowerCase()}.`}
+              ? `Freddy insistera sur le ${weak.label.toLowerCase()}.`
+              : `Freddy verrait bien le ${weak.label.toLowerCase()}.`}
           </p>
         )}
         <div className="word-bank-row" role="group" aria-label="Point de grammaire">

@@ -65,7 +65,7 @@ export default async function handler(req, res) {
           model: REALTIME_MODEL,
           config: {
             responseModalities: [Modality.AUDIO],
-            systemInstruction: scenario.instructions,
+            systemInstruction: { parts: [{ text: scenario.instructions }] },
             speechConfig: {
               voiceConfig: {
                 prebuiltVoiceConfig: { voiceName: REALTIME_VOICE },
