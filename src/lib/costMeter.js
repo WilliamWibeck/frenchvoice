@@ -109,29 +109,50 @@ export function createCostMeter() {
       const promptText = resolve("promptText");
       const responseAudio = resolve("responseAudio") || cum.cumResponse;
 
-      // THE test: does prompt cost per turn grow as the session runs?
+      // PRIMARY test, and the robust one: audio is billed at a fixed 25 tokens
+      // per second, so a session can bill at most duration x 25 tokens per
+      // direction. Exceeding that ceiling is only possible if the accumulated
+      // history is being re-charged. This needs no assumptions about turns.
+      const ceiling = (durationMs / 1000) * TOKENS_PER_AUDIO_SECOND;
+      const audioVsCeiling = ceiling > 0 ? promptAudio / ceiling : null;
+
+      // SECONDARY test: does prompt cost per turn grow as the session runs?
+      // The first sample carries the one-time system instruction, so skip it —
+      // including it makes early turns look inflated and the ratio artificially
+      // low. Needs enough samples left over to still be meaningful.
       let linearity = null;
-      if (n >= 6) {
-        const third = Math.floor(n / 3);
-        const head = samples.slice(0, third);
-        const tail = samples.slice(n - third);
+      const usable = samples.slice(1);
+      if (usable.length >= 6) {
+        const third = Math.floor(usable.length / 3);
         const avg = (arr) => arr.reduce((s, x) => s + x.dPrompt, 0) / (arr.length || 1);
-        const first = avg(head);
-        const lastAvg = avg(tail);
+        const first = avg(usable.slice(0, third));
+        const lastAvg = avg(usable.slice(usable.length - third));
         linearity = {
           firstThirdPerTurn: Math.round(first),
           lastThirdPerTurn: Math.round(lastAvg),
           ratio: first > 0 ? +(lastAvg / first).toFixed(2) : null,
+          samplesUsed: usable.length,
         };
-        linearity.verdict =
-          linearity.ratio == null
-            ? "inconclusive"
-            : linearity.ratio < 1.35
-              ? "LINEAR — model holds"
-              : linearity.ratio < 2
-                ? "MILDLY SUPERLINEAR — add headroom"
-                : "RE-BILLED HISTORY — model is wrong, reprice";
       }
+
+      let verdict;
+      if (audioVsCeiling == null) {
+        verdict = "inconclusive — no data";
+      } else if (audioVsCeiling > 1.05) {
+        verdict = "RE-BILLED HISTORY — model is wrong, reprice";
+      } else if (usable.length < 6) {
+        verdict = `LINEAR on the audio ceiling test — but only ${usable.length} usable samples; run 10+ min to confirm`;
+      } else if (linearity?.ratio != null && linearity.ratio > 1.5) {
+        verdict = "MIXED — audio is linear but per-turn prompt cost is climbing; investigate";
+      } else {
+        verdict = "LINEAR — model holds";
+      }
+      const audioCeiling = {
+        billedTokens: Math.round(promptAudio),
+        ceilingTokens: Math.round(ceiling),
+        fractionOfCeiling: audioVsCeiling == null ? null : +audioVsCeiling.toFixed(2),
+        verdict,
+      };
 
       const cost = {
         liveAudioIn: (promptAudio / 1e6) * RATES.liveAudioIn,
@@ -161,6 +182,7 @@ export function createCostMeter() {
           learnerUploading: durationSec ? +(learnerUploadedSec / durationSec).toFixed(3) : null,
         },
         correctionsPerMinute: minutes > 0 ? +(corrections.calls / minutes).toFixed(2) : 0,
+        audioCeiling,
         linearity,
         cost,
         samples,
@@ -208,16 +230,21 @@ export function printCostReport(r) {
     "",
     "-- linearity: is conversation history re-billed each turn? --",
   ];
+  const ac = r.audioCeiling || {};
+  lines.push(
+    `  audio billed / ceiling           ${ac.billedTokens} / ${ac.ceilingTokens} tokens  (${ac.fractionOfCeiling})`,
+    "    ceiling = duration x 25 tok/s. Above 1.0 is only possible if history is re-billed."
+  );
   if (r.linearity) {
     lines.push(
-      `  prompt tokens/turn, first third  ${r.linearity.firstThirdPerTurn}`,
+      `  prompt tokens/turn, first third  ${r.linearity.firstThirdPerTurn}  (setup sample excluded)`,
       `  prompt tokens/turn, last third   ${r.linearity.lastThirdPerTurn}`,
-      `  ratio                            ${r.linearity.ratio}`,
-      `  VERDICT: ${r.linearity.verdict}`
+      `  ratio                            ${r.linearity.ratio}   from ${r.linearity.samplesUsed} samples`
     );
   } else {
-    lines.push("  not enough turns — run a longer session (aim for 5+ minutes)");
+    lines.push("  per-turn trend: too few samples — run 10+ minutes for this one");
   }
+  lines.push(`  VERDICT: ${ac.verdict}`);
   lines.push(
     "",
     "-- cost --",
