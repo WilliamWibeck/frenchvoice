@@ -24,6 +24,8 @@ export function saveResume(entry) {
         focus: entry.focus || "",
         daily: !!entry.daily,
         topic: entry.topic || "",
+        customPrompt: entry.customPrompt || "",
+        customTitle: entry.customTitle || "",
       })
     );
   } catch {

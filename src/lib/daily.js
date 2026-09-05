@@ -4,7 +4,20 @@ import { localDateKey } from "./stats.js";
 export const DAILY_MINUTES = 15;
 export const DAILY_MS = DAILY_MINUTES * 60 * 1000;
 
-const ROTATION = ["cafe", "free", "boulangerie", "smalltalk", "hotel", "directions"];
+const ROTATION = [
+  "cafe",
+  "free",
+  "boulangerie",
+  "smalltalk",
+  "hotel",
+  "directions",
+  "pharmacie",
+  "gare",
+  "marche",
+  "telephone",
+  "medecin",
+  "velo",
+];
 
 export function pickDailyPlan(now = Date.now()) {
   const n = Number(localDateKey(now).replace(/-/g, ""));

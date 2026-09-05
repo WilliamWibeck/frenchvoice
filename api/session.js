@@ -24,6 +24,8 @@ function readSessionInput(req) {
     daily: !!(body.daily || query.daily),
     resume: !!(body.resume || query.resume),
     vocabTargets: body.vocabTargets || [],
+    customPrompt: body.customPrompt || query.customPrompt || "",
+    customTitle: body.customTitle || query.customTitle || "",
   };
 }
 
@@ -47,6 +49,8 @@ export default async function handler(req, res) {
     daily: input.daily,
     resume: input.resume,
     vocabTargets: input.vocabTargets,
+    customPrompt: input.customPrompt,
+    customTitle: input.customTitle,
   });
 
   try {

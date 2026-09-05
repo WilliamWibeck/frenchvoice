@@ -167,6 +167,8 @@ export function useRealtimeSession() {
       topic: s.topic || "",
       focus: s.focus || "",
       daily: !!s.daily,
+      customPrompt: s.customPrompt || "",
+      customTitle: s.customTitle || "",
       startedAt: s.startedAt || endedAt,
       endedAt,
       durationMs: s.startedAt ? endedAt - s.startedAt : 0,
@@ -251,6 +253,8 @@ export function useRealtimeSession() {
         topic: options.topic || "",
         focus: options.focus || "",
         daily: !!options.daily,
+        customPrompt: options.customPrompt || "",
+        customTitle: options.customTitle || "",
         startedAt: 0,
         utterances: 0,
         wordsSpoken: 0,
@@ -313,6 +317,8 @@ export function useRealtimeSession() {
             daily: !!options.daily,
             resume: !!options.resume,
             vocabTargets: options.vocabTargets || [],
+            customPrompt: options.customPrompt || "",
+            customTitle: options.customTitle || title || "",
           }),
         });
         const tokenData = await tokenRes.json();
@@ -337,6 +343,8 @@ export function useRealtimeSession() {
         statsRef.current.topic = options.topic || "";
         statsRef.current.focus = options.focus || "";
         statsRef.current.daily = !!options.daily;
+        statsRef.current.customPrompt = options.customPrompt || "";
+        statsRef.current.customTitle = options.customTitle || resolvedTitle;
         statsRef.current.startedAt = started;
 
         const ws = new WebSocket(

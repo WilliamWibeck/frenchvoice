@@ -40,6 +40,8 @@ export default function App() {
         focus: snapshot.focus,
         daily: snapshot.daily,
         topic: snapshot.topic,
+        customPrompt: snapshot.customPrompt,
+        customTitle: snapshot.customTitle || snapshot.scenarioTitle,
       });
     }
     setRecapRecorded(recorded);
@@ -83,6 +85,8 @@ export default function App() {
               topic: recap.topic || "",
               focus: recap.focus || "",
               daily: !!recap.daily,
+              customPrompt: recap.customPrompt || "",
+              customTitle: recap.customTitle || recap.scenarioTitle,
             })
           }
           onPracticeVocab={(words) => {

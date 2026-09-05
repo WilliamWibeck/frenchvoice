@@ -75,7 +75,9 @@ body {
 .btn-primary-lg,
 .btn-ghost-lg,
 .theme-toggle button,
-.handsfree-hint {
+.handsfree-hint,
+.star-btn,
+.scene-remove {
   transition:
     transform var(--motion-hover),
     background-color var(--motion-hover),
@@ -328,18 +330,69 @@ body {
 }
 .scenario-card {
   position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
   background: var(--color-surface);
   border: 0;
   border-radius: 24px;
-  padding: 16px;
+  padding: 16px 12px 16px 16px;
   overflow: hidden;
-  cursor: pointer;
   text-align: left;
   color: var(--color-text);
   font: inherit;
 }
-.scenario-card:hover:not(:disabled) { transform: translateY(-3px); }
-.scenario-card:disabled { opacity: 0.45; cursor: not-allowed; }
+.scenario-play {
+  flex: 1;
+  min-width: 0;
+  position: relative;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  text-align: left;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.scenario-card:hover:not(.is-disabled) { transform: translateY(-3px); }
+.scenario-card.is-disabled { opacity: 0.45; }
+.scenario-play:disabled,
+.star-btn:disabled,
+.scene-remove:disabled { cursor: not-allowed; }
+.star-btn,
+.scene-remove {
+  position: relative;
+  z-index: 1;
+  flex: none;
+  width: 34px;
+  height: 34px;
+  margin-top: -2px;
+  border: 0;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--color-bg) 78%, transparent);
+  color: var(--color-neutral-600);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  padding: 0;
+}
+.star-btn svg {
+  width: 18px;
+  height: 18px;
+  display: block;
+}
+.star-btn.on { color: var(--color-accent); }
+.star-btn:hover:not(:disabled),
+.scene-remove:hover:not(:disabled) {
+  color: var(--color-accent);
+  background: var(--color-bg);
+}
+.scene-remove {
+  font-size: 22px;
+  line-height: 1;
+  color: var(--color-neutral-600);
+}
 .scenario-blob {
   position: absolute;
   top: -22px;
@@ -508,6 +561,31 @@ body {
 }
 .scenes-panel .scenario-grid { margin-bottom: var(--space-6); }
 .scenes-panel .daily-start { margin-bottom: var(--space-6); }
+.scenes-kicker { margin: 2px 0 10px; }
+.scene-compose {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0 0 var(--space-6);
+}
+.scene-compose textarea.input,
+.scene-compose textarea {
+  width: 100%;
+  min-height: 88px;
+  resize: vertical;
+  background: var(--color-surface);
+  border: 1px solid var(--color-divider);
+  border-radius: 22px;
+  padding: 14px 18px;
+  font: inherit;
+  font-size: 14px;
+  color: var(--color-text);
+  line-height: 1.45;
+}
+.scene-compose textarea::placeholder {
+  color: var(--color-neutral-600);
+}
+.compose-go { width: 100%; }
 .word-bank-row { display: flex; flex-wrap: wrap; gap: 8px; }
 .word-chip {
   display: flex;
@@ -1604,11 +1682,16 @@ html[data-theme="soir"] .scenario-grid {
 html[data-theme="soir"] .scenario-card {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 8px;
   border-radius: 999px;
-  padding: 12px 18px;
+  padding: 10px 10px 10px 18px;
 }
-html[data-theme="soir"] .scenario-card:hover:not(:disabled) {
+html[data-theme="soir"] .scenario-play {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+html[data-theme="soir"] .scenario-card:hover:not(.is-disabled) {
   transform: translateX(4px);
   background: var(--color-neutral-700);
 }
@@ -1867,6 +1950,23 @@ html[data-theme="soir"] .word-chip.suggested {
 }
 html[data-theme="soir"] .focus-hint { color: var(--color-neutral-400); }
 html[data-theme="soir"] .scenes-toggle:hover { color: var(--color-accent); }
+html[data-theme="soir"] .star-btn,
+html[data-theme="soir"] .scene-remove {
+  background: color-mix(in srgb, var(--color-neutral-100) 8%, transparent);
+  color: var(--color-neutral-400);
+}
+html[data-theme="soir"] .star-btn.on { color: var(--color-accent); }
+html[data-theme="soir"] .star-btn:hover:not(:disabled),
+html[data-theme="soir"] .scene-remove:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--color-neutral-100) 14%, transparent);
+  color: var(--color-accent);
+}
+html[data-theme="soir"] .scene-compose textarea.input,
+html[data-theme="soir"] .scene-compose textarea {
+  background: var(--color-surface);
+  border-color: color-mix(in srgb, var(--color-neutral-100) 18%, transparent);
+  color: var(--color-neutral-100);
+}
 html[data-theme="soir"] .mission-chip {
   background: var(--color-surface);
   color: var(--color-neutral-300);
