@@ -1285,7 +1285,7 @@ body {
   margin-top: 28vh;
   background: var(--color-bg);
   border-radius: 36px 36px 0 0;
-  box-shadow: 0 -14px 34px color-mix(in srgb, var(--color-text) 18%, transparent);
+  box-shadow: 0 -6px 18px color-mix(in srgb, var(--color-text) 10%, transparent);
   padding: 22px 22px 24px;
   display: flex;
   flex-direction: column;
@@ -1889,6 +1889,8 @@ html[data-theme="soir"] .play-fix {
 html[data-theme="soir"] .recap-overlay { max-width: 460px; }
 html[data-theme="soir"] .recap-sheet {
   background: var(--color-bg);
-  box-shadow: 0 -14px 34px color-mix(in srgb, #000 52%, transparent);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--color-neutral-100) 10%, transparent),
+    0 -1px 0 color-mix(in srgb, var(--color-neutral-100) 8%, transparent);
 }
 html[data-theme="soir"] .recap-stat.words { display: grid; }
